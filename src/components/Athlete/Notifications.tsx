@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaBell, FaRobot, FaTrophy, FaRunning, FaExclamationTriangle, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
+import { AthleteData } from './AthleteDashboard'; // Adjust the import path as needed
+
+interface NotificationsProps {
+  athleteData: AthleteData;
+}
 
 interface Notification {
   id: string;
@@ -22,7 +27,7 @@ interface Notification {
   };
 }
 
-const Notifications = () => {
+const Notifications = ({ athleteData }: NotificationsProps) => {
   const [activeTab, setActiveTab] = useState<'all' | 'ai' | 'recruitment' | 'training' | 'injury'>('all');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
@@ -36,7 +41,7 @@ const Notifications = () => {
         id: '1',
         type: 'ai',
         title: 'AI Training Optimization Available',
-        description: 'Based on your recent performance data, we\'ve generated new training recommendations to improve your speed and agility.',
+        description: `Hi ${athleteData.name}, based on your recent performance data, we've generated new training recommendations to improve your speed and agility.`,
         timestamp: new Date(),
         read: false,
         priority: 'high',
@@ -51,7 +56,7 @@ const Notifications = () => {
         id: '2',
         type: 'ai',
         title: 'New Performance Analysis',
-        description: 'Your latest performance metrics have been analyzed. Check out the detailed report for insights.',
+        description: `Your latest performance metrics have been analyzed, ${athleteData.name}. Check out the detailed report for insights.`,
         timestamp: new Date(Date.now() - 86400000), // 1 day ago
         read: false,
         priority: 'medium',
@@ -67,7 +72,7 @@ const Notifications = () => {
         id: '3',
         type: 'recruitment',
         title: 'New Contract Offer',
-        description: 'Elite Sports Club has shown interest in your profile and submitted a contract offer.',
+        description: `${athleteData.name}, Elite Sports Club has shown interest in your profile and submitted a contract offer.`,
         timestamp: new Date(Date.now() - 3600000), // 1 hour ago
         read: false,
         priority: 'high',
@@ -86,7 +91,7 @@ const Notifications = () => {
         id: '4',
         type: 'recruitment',
         title: 'Scout Interest',
-        description: 'A talent scout from Global Sports Agency has viewed your profile.',
+        description: `A talent scout from Global Sports Agency has viewed your profile, ${athleteData.name}.`,
         timestamp: new Date(Date.now() - 172800000), // 2 days ago
         read: false,
         priority: 'medium',
@@ -102,7 +107,7 @@ const Notifications = () => {
         id: '5',
         type: 'training',
         title: 'New Workout Plan',
-        description: 'Your coach has uploaded a new workout plan tailored to your goals.',
+        description: `${athleteData.name}, your coach has uploaded a new workout plan tailored to your goals.`,
         timestamp: new Date(Date.now() - 7200000), // 2 hours ago
         read: false,
         priority: 'medium',
@@ -117,7 +122,7 @@ const Notifications = () => {
         id: '6',
         type: 'training',
         title: 'Training Session Reminder',
-        description: 'You have a scheduled training session tomorrow at 10:00 AM. Don’t forget!',
+        description: `You have a scheduled training session tomorrow at 10:00 AM, ${athleteData.name}. Don’t forget!`,
         timestamp: new Date(Date.now() - 43200000), // 12 hours ago
         read: false,
         priority: 'low',
@@ -133,7 +138,7 @@ const Notifications = () => {
         id: '7',
         type: 'injury',
         title: 'High Fatigue Warning',
-        description: 'Our AI has detected elevated fatigue levels. Consider reducing training intensity for the next 48 hours.',
+        description: `Our AI has detected elevated fatigue levels, ${athleteData.name}. Consider reducing training intensity for the next 48 hours.`,
         timestamp: new Date(Date.now() - 7200000), // 2 hours ago
         read: false,
         priority: 'medium',
@@ -148,7 +153,7 @@ const Notifications = () => {
         id: '8',
         type: 'injury',
         title: 'Injury Risk Detected',
-        description: 'Your recent training data suggests a higher risk of injury. Please consult your physiotherapist.',
+        description: `Your recent training data suggests a higher risk of injury, ${athleteData.name}. Please consult your physiotherapist.`,
         timestamp: new Date(Date.now() - 14400000), // 4 hours ago
         read: false,
         priority: 'high',
@@ -163,7 +168,7 @@ const Notifications = () => {
 
     setNotifications(mockNotifications);
     setUnreadCount(mockNotifications.filter(n => !n.read).length);
-  }, []);
+  }, [athleteData]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {

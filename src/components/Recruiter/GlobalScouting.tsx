@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaSearch, FaFilter, FaRobot, FaStar, FaChartLine, FaGlobe, FaUserPlus, FaVideo, FaRunning, FaHeartbeat, FaBrain, FaChartBar, FaArrowsAlt, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { FaSearch, FaFilter, FaRobot, FaStar, FaChartLine, FaGlobe, FaUserPlus, FaVideo, FaBrain, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import { Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 interface Athlete {
   id: string;

@@ -12,7 +12,8 @@ import {
   FaTrash,
   FaFileContract,
   FaFileAlt,
-  FaHandshake} from 'react-icons/fa';
+  FaHandshake,
+} from 'react-icons/fa';
 import athleteData from '../config/athlete.json'; // Import the JSON data
 
 interface Notification {
@@ -34,7 +35,6 @@ const NotificationsCenter = () => {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
-  const [loading, setLoading] = useState(true);
   const [sport, setSport] = useState<string>('Football'); // Default sport
 
   // Fetch athlete data and generate notifications
@@ -59,17 +59,15 @@ const NotificationsCenter = () => {
             metrics: {
               speed: Math.floor(Math.random() * 100),
               stamina: Math.floor(Math.random() * 100),
-              accuracy: Math.floor(Math.random() * 100)
-            }
-          }
+              accuracy: Math.floor(Math.random() * 100),
+            },
+          },
         }));
 
         setNotifications(mockNotifications);
-        setUnreadCount(mockNotifications.filter(n => !n.read).length);
-        setLoading(false);
+        setUnreadCount(mockNotifications.filter((n) => !n.read).length);
       } catch (error) {
         console.error('Error fetching notifications:', error);
-        setLoading(false);
       }
     };
 
@@ -94,12 +92,12 @@ const NotificationsCenter = () => {
             metric: 'speed',
             improvement: Math.floor(Math.random() * 10),
             previousValue: Math.floor(Math.random() * 100),
-            newValue: Math.floor(Math.random() * 100)
-          }
+            newValue: Math.floor(Math.random() * 100),
+          },
         };
 
-        setNotifications(prev => [newNotification, ...prev]);
-        setUnreadCount(prev => prev + 1);
+        setNotifications((prev) => [newNotification, ...prev]);
+        setUnreadCount((prev) => prev + 1);
       }
     }, 30000); // New notification every 30 seconds
 
@@ -130,33 +128,33 @@ const NotificationsCenter = () => {
   };
 
   const handleMarkAsRead = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
+    setNotifications((prev) =>
+      prev.map((notification) =>
         notification.id === notificationId
           ? { ...notification, read: true }
           : notification
       )
     );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
+    setNotifications((prev) =>
+      prev.map((notification) => ({ ...notification, read: true }))
     );
     setUnreadCount(0);
   };
 
   const handleDeleteNotification = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.filter(notification => notification.id !== notificationId)
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.id !== notificationId)
     );
     if (selectedNotification?.id === notificationId) {
       setSelectedNotification(null);
     }
   };
 
-  const filteredNotifications = notifications.filter(notification =>
+  const filteredNotifications = notifications.filter((notification) =>
     selectedType === 'all' ? true : notification.type === selectedType
   );
 
@@ -245,8 +243,8 @@ const NotificationsCenter = () => {
                   { id: 'event', label: 'Events', icon: FaCalendarAlt },
                   { id: 'offer_acceptance', label: 'Offer Acceptances', icon: FaHandshake },
                   { id: 'report', label: 'Performance Reports', icon: FaFileAlt },
-                  { id: 'contract_update', label: 'Contract Updates', icon: FaFileContract }
-                ].map(filter => (
+                  { id: 'contract_update', label: 'Contract Updates', icon: FaFileContract },
+                ].map((filter) => (
                   <motion.button
                     key={filter.id}
                     whileHover={{ x: 5 }}
