@@ -97,9 +97,9 @@ npm install
 
 ### **🔹 Step 3: Set Up Firebase & Google Cloud Services**  
 1. **Create a Firebase project** in Google Cloud Console.  
-2. **Enable Firestore, Firebase Authentication & Google Fit API.**  
+2. **Enable Firestore, Firebase Authentication.**  
 3. **Set up Google Cloud AI/ML services for predictive insights.**  
-4. Add your **Firebase config** inside `.env`:  
+4. Add your **Firebase config** inside `firebase.ts` at /components/config folder:  
 ```env
 REACT_APP_FIREBASE_API_KEY=your_api_key
 REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
@@ -113,6 +113,15 @@ npm start
 Your **Athlete Management Solution** is now live at `http://localhost:3000`! 🎯  
 
 ---
+OR
+---
+
+### **🔹 Step 5: Start the Development Server**  
+```bash
+npm run dev
+```
+Your **Athlete Management Solution** is now live at `http://localhost:`! 🎯  
+
 
 ## **🚀 Development Roadmap – The Path to Global Impact**  
 
