@@ -10,6 +10,7 @@ import SignUp from './components/auth/SignUp';
 import UserSelection from './components/home/UserSelection';
 import AthleteRegistration from './components/Registration/AthleteRegistration';
 import RecruiterRegistration from './components/Registration/RecruiterRegistration';
+import WelcomeRecruiter from './components/Registration/WelcomeRecruiter';
 import JourneyConfirmation from './components/Registration/JourneyConfirmation';
 import ScheduleJourney from './components/Registration/ScheduleJourney';
 import AthleteOnboarding from './components/Registration/AthleteOnboarding';
@@ -32,6 +33,7 @@ function App() {
           <Route path="/athlete-onboarding" element={<AthleteOnboarding />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/recruiter-registration" element={<RecruiterRegistration />} />
+          <Route path="/welcome-recruiter" element={<WelcomeRecruiter />} />
           <Route path="/dashboard/athlete" element={<AthleteDashboard />} />
           <Route path="/dashboard/recruiter" element={<RecruiterDashboard />} />
           <Route path="/" element={

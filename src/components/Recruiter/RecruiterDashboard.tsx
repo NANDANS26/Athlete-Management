@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaUserTie, FaUsers, FaChartLine, FaBell, FaRobot, FaFileContract, FaTrophy, FaExclamationTriangle, FaCog, FaVideo } from 'react-icons/fa';
+import { FaUserTie, FaUsers, FaBell, FaRobot, FaFileContract, FaTrophy,  FaCog } from 'react-icons/fa';
 import Sidebar from './Sidebar';
 import AthletePerformanceTracking from './AthletePerformanceTracking';
-import GlobalScouting from './GlobalScouting';
 import ContractManagement from './ContractManagement';
+import NotificationsCenter from './NotificationsCenter';
 import { doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import Settings from '../Settings/Settings';
 import CommunityPage from '../Community/CommunityPage';
-import NotificationsCenter from './NotificationsCenter';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AIInsights from './AiInsights';
 
 interface RecruiterData {
@@ -30,10 +28,8 @@ interface QuickStat {
 
 const menuItems = [
   { icon: FaUsers, label: 'Athlete Performance Tracking', id: 'performance' },
-  { icon: FaUserTie, label: 'Global Scouting', id: 'scouting' },
   { icon: FaFileContract, label: 'Contract Management', id: 'contracts' },
   { icon: FaRobot, label: 'AiInsights', id: 'ai-insights' },
-  { icon: FaChartLine, label: 'Performance Analytics', id: 'analytics' },
   { icon: FaBell, label: 'Notifications', id: 'notifications' },
   { icon: FaUserTie, label: 'Community', id: 'community' },
   { icon: FaCog, label: 'Settings', id: 'settings' },
@@ -43,7 +39,6 @@ const RecruiterDashboard = () => {
   const [recruiterData, setRecruiterData] = useState<RecruiterData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('performance');
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [aiRecommendations, setAiRecommendations] = useState<string[]>([]);
 
   // Quick stats data
@@ -78,14 +73,6 @@ const RecruiterDashboard = () => {
     }
   ];
 
-  // Sample performance data
-  const performanceData = [
-    { month: 'Jan', athletes: 10, contracts: 2 },
-    { month: 'Feb', athletes: 15, contracts: 4 },
-    { month: 'Mar', athletes: 12, contracts: 3 },
-    { month: 'Apr', athletes: 20, contracts: 5 }
-  ];
-
   useEffect(() => {
     const fetchRecruiterData = async () => {
       try {
@@ -96,28 +83,6 @@ const RecruiterDashboard = () => {
         if (recruiterDoc.exists()) {
           setRecruiterData(recruiterDoc.data() as RecruiterData);
         }
-
-        // Simulate fetching recent activity
-        setRecentActivity([
-          {
-            type: 'video',
-            title: 'New Match Performance',
-            athlete: 'John Smith',
-            time: '2 hours ago'
-          },
-          {
-            type: 'contract',
-            title: 'Contract Accepted',
-            athlete: 'Sarah Johnson',
-            time: '5 hours ago'
-          },
-          {
-            type: 'alert',
-            title: 'Injury Alert',
-            athlete: 'Mike Wilson',
-            time: '1 day ago'
-          }
-        ]);
 
         // Simulate AI recommendations
         setAiRecommendations([
@@ -156,8 +121,6 @@ const RecruiterDashboard = () => {
     switch (activeSection) {
       case 'performance':
         return <AthletePerformanceTracking />;
-      case 'scouting':
-        return <GlobalScouting />;
       case 'contracts':
         return <ContractManagement />;
       case 'ai-insights':
@@ -166,104 +129,8 @@ const RecruiterDashboard = () => {
         return <Settings />;
       case 'community':
         return <CommunityPage />;
-      case 'analytics':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white/10 p-6 rounded-xl"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <FaChartLine className="text-2xl text-primary" />
-              <h2 className="text-xl font-semibold">Performance Analytics</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white/5 p-4 rounded-lg">
-                <h3 className="font-semibold mb-4">Recruitment Success Rate</h3>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={performanceData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                      <XAxis dataKey="month" stroke="#888" />
-                      <YAxis stroke="#888" />
-                      <Tooltip />
-                      <Line
-                        type="monotone"
-                        dataKey="contracts"
-                        stroke="#646cff"
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              <div className="bg-white/5 p-4 rounded-lg">
-                <h3 className="font-semibold mb-4">Athlete Performance Trends</h3>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={performanceData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                      <XAxis dataKey="month" stroke="#888" />
-                      <YAxis stroke="#888" />
-                      <Tooltip />
-                      <Line
-                        type="monotone"
-                        dataKey="athletes"
-                        stroke="#00ff88"
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        );
       case 'notifications':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="bg-white/10 p-6 rounded-xl">
-              <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-              <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center gap-4 bg-white/5 p-4 rounded-lg"
-                  >
-                    {activity.type === 'video' && (
-                      <div className="text-blue-500 text-xl">
-                        <FaVideo />
-                      </div>
-                    )}
-                    {activity.type === 'contract' && (
-                      <div className="text-green-500 text-xl">
-                        <FaFileContract />
-                      </div>
-                    )}
-                    {activity.type === 'alert' && (
-                      <div className="text-red-500 text-xl">
-                        <FaExclamationTriangle />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{activity.title}</h3>
-                      <p className="text-sm text-gray-400">
-                        {activity.athlete} • {activity.time}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        );
+        return <NotificationsCenter />;
       default:
         return <AthletePerformanceTracking />;
     }

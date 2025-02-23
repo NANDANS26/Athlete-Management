@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaSearch, FaRobot, FaChartLine, FaRunning, FaHeartbeat, FaVideo, FaArrowsAlt, FaStar, FaExclamationTriangle, FaBrain, FaDumbbell, FaStopwatch, FaChartBar } from 'react-icons/fa';
+import { FaSearch, FaRobot, FaChartLine, FaRunning, FaHeartbeat, FaArrowsAlt, FaExclamationTriangle, FaBrain, FaDumbbell, FaStopwatch, FaChartBar } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+
+// Import the JSON data (replace with your actual JSON data)
+import athletesData from '../config/athlete.json'; // Adjust the path as needed
 
 interface Athlete {
   id: string;
@@ -27,6 +30,8 @@ interface Athlete {
     tags: string[];
     date: string;
   }[];
+  image: string; // Add image field
+  awards?: string; // Add awards field
 }
 
 interface PerformanceData {
@@ -38,35 +43,7 @@ interface PerformanceData {
 }
 
 const AthletePerformanceTracking = () => {
-  const [athletes, setAthletes] = useState<Athlete[]>([
-    {
-      id: '1',
-      name: 'John Smith',
-      age: 22,
-      sport: 'Football',
-      position: 'Forward',
-      skillScore: 85,
-      recentTrend: 'up',
-      metrics: {
-        speed: 88,
-        strength: 82,
-        endurance: 85,
-        agility: 90,
-        recovery: 78,
-        mentalHealth: 92
-      },
-      injuryRisk: 15,
-      videos: [
-        {
-          id: 'v1',
-          title: 'Match Highlights vs. Team A',
-          thumbnail: 'https://i.pravatar.cc/300?img=1',
-          tags: ['Goal', 'Sprint', 'Best Play'],
-          date: '2024-02-15'
-        }
-      ]
-    }
-  ]);
+  const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [selectedAthlete, setSelectedAthlete] = useState<Athlete | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMetric, setSelectedMetric] = useState('speed');
@@ -74,6 +51,46 @@ const AthletePerformanceTracking = () => {
   const [comparedAthletes, setComparedAthletes] = useState<string[]>([]);
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'videos' | 'analysis'>('overview');
+  const [selectedSport, setSelectedSport] = useState<string>('');
+
+  // Load athletes data from JSON
+  useEffect(() => {
+    const formattedAthletes = athletesData.Football.map((player) => ({
+      id: player.Name.replace(/\s+/g, '-').toLowerCase(),
+      name: player.Name,
+      age: player.Age,
+      sport: 'Football', // Hardcoded for now, but can be dynamic
+      position: player.Position,
+      skillScore: Math.floor(Math.random() * 40) + 60, // Random skill score for demo
+      recentTrend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable',
+      metrics: {
+        speed: Math.floor(Math.random() * 40) + 60,
+        strength: Math.floor(Math.random() * 40) + 60,
+        endurance: Math.floor(Math.random() * 40) + 60,
+        agility: Math.floor(Math.random() * 40) + 60,
+        recovery: Math.floor(Math.random() * 40) + 60,
+        mentalHealth: Math.floor(Math.random() * 40) + 60,
+      },
+      injuryRisk: Math.floor(Math.random() * 30) + 10,
+      videos: [
+        {
+          id: 'v1',
+          title: 'Match Highlights',
+          thumbnail: player.Image,
+          tags: ['Goal', 'Sprint', 'Best Play'],
+          date: '2024-02-15',
+        },
+      ],
+      image: player.Image, // Add image from JSON
+      awards: player.Awards, // Add awards from JSON
+    }));
+    setAthletes(formattedAthletes);
+  }, []);
+
+  // Filter athletes by sport
+  const filteredAthletes = selectedSport
+    ? athletes.filter((athlete) => athlete.sport.toLowerCase() === selectedSport.toLowerCase())
+    : athletes;
 
   // Generate sample performance data
   useEffect(() => {
@@ -88,7 +105,7 @@ const AthletePerformanceTracking = () => {
           speed: 70 + Math.random() * 20,
           strength: 65 + Math.random() * 25,
           endurance: 75 + Math.random() * 15,
-          agility: 80 + Math.random() * 10
+          agility: 80 + Math.random() * 10,
         });
       }
       setPerformanceData(data);
@@ -99,9 +116,9 @@ const AthletePerformanceTracking = () => {
 
   const handleCompareToggle = (athleteId: string) => {
     if (comparedAthletes.includes(athleteId)) {
-      setComparedAthletes(prev => prev.filter(id => id !== athleteId));
+      setComparedAthletes((prev) => prev.filter((id) => id !== athleteId));
     } else if (comparedAthletes.length < 2) {
-      setComparedAthletes(prev => [...prev, athleteId]);
+      setComparedAthletes((prev) => [...prev, athleteId]);
     }
   };
 
@@ -152,15 +169,22 @@ const AthletePerformanceTracking = () => {
           />
         </div>
         <div className="flex gap-2">
-          <select className="bg-white/10 rounded-lg px-4 py-3">
+          <select
+            value={selectedSport}
+            onChange={(e) => setSelectedSport(e.target.value)}
+            className="bg-white/10 rounded-lg px-4 py-3"
+          >
             <option value="">All Sports</option>
             <option value="football">Football</option>
             <option value="basketball">Basketball</option>
-          </select>
-          <select className="bg-white/10 rounded-lg px-4 py-3">
-            <option value="">All Positions</option>
-            <option value="forward">Forward</option>
-            <option value="midfielder">Midfielder</option>
+            <option value="boxing">Boxing</option>
+            <option value="swimming">Swimming</option>
+            <option value="tennis">Tennis</option>
+            <option value="badminton">Badminton</option>
+            <option value="rugby">Rugby</option>
+            <option value="hockey">Hockey</option>
+            <option value="athletics">Athletics</option>
+            <option value="cricket">Cricket</option>
           </select>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -181,7 +205,7 @@ const AthletePerformanceTracking = () => {
         <div className="lg:col-span-1 bg-white/10 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-4">Athletes</h2>
           <div className="space-y-4">
-            {athletes.map((athlete) => (
+            {filteredAthletes.map((athlete) => (
               <motion.div
                 key={athlete.id}
                 whileHover={{ scale: 1.02 }}
@@ -234,9 +258,8 @@ const AthletePerformanceTracking = () => {
               <div className="flex gap-4 mb-6">
                 {[
                   { id: 'overview', label: 'Overview', icon: FaChartLine },
-                  { id: 'videos', label: 'Match Videos', icon: FaVideo },
-                  { id: 'analysis', label: 'AI Analysis', icon: FaRobot }
-                ].map(tab => (
+                  { id: 'analysis', label: 'AI Analysis', icon: FaRobot },
+                ].map((tab) => (
                   <motion.button
                     key={tab.id}
                     whileHover={{ scale: 1.05 }}
@@ -271,6 +294,11 @@ const AthletePerformanceTracking = () => {
                           <p className="text-gray-400">
                             {selectedAthlete.age} years • {selectedAthlete.sport} • {selectedAthlete.position}
                           </p>
+                          {selectedAthlete.awards && (
+                            <p className="text-sm text-gray-400 mt-2">
+                              Awards: {selectedAthlete.awards}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-3xl font-bold text-primary">
@@ -278,6 +306,15 @@ const AthletePerformanceTracking = () => {
                           </div>
                           <p className="text-sm text-gray-400">Overall Skill Score</p>
                         </div>
+                      </div>
+
+                      {/* Athlete Image */}
+                      <div className="mb-6">
+                        <img
+                          src={selectedAthlete.image}
+                          alt={selectedAthlete.name}
+                          className="w-32 h-32 rounded-full object-cover"
+                        />
                       </div>
 
                       {/* Key Metrics Grid */}
@@ -321,7 +358,7 @@ const AthletePerformanceTracking = () => {
                             <Tooltip
                               contentStyle={{
                                 backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                border: '1px solid #666'
+                                border: '1px solid #666',
                               }}
                             />
                             <Line
@@ -388,46 +425,6 @@ const AthletePerformanceTracking = () => {
                   </motion.div>
                 )}
 
-                {activeTab === 'videos' && (
-                  <motion.div
-                    key="videos"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="bg-white/10 rounded-xl p-6"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {selectedAthlete.videos.map((video) => (
-                        <motion.div
-                          key={video.id}
-                          whileHover={{ scale: 1.02 }}
-                          className="bg-white/5 rounded-lg overflow-hidden"
-                        >
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-full h-48 object-cover"
-                          />
-                          <div className="p-4">
-                            <h3 className="font-semibold mb-2">{video.title}</h3>
-                            <p className="text-sm text-gray-400 mb-2">{video.date}</p>
-                            <div className="flex flex-wrap gap-2">
-                              {video.tags.map((tag, index) => (
-                                <span
-                                  key={index}
-                                  className="bg-primary/20 text-primary px-2 py-1 rounded-full text-sm"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-
                 {activeTab === 'analysis' && (
                   <motion.div
                     key="analysis"
@@ -447,7 +444,7 @@ const AthletePerformanceTracking = () => {
                             { subject: 'Endurance', A: selectedAthlete.metrics.endurance },
                             { subject: 'Agility', A: selectedAthlete.metrics.agility },
                             { subject: 'Recovery', A: selectedAthlete.metrics.recovery },
-                            { subject: 'Mental', A: selectedAthlete.metrics.mentalHealth }
+                            { subject: 'Mental', A: selectedAthlete.metrics.mentalHealth },
                           ]}>
                             <PolarGrid stroke="#444" />
                             <PolarAngleAxis dataKey="subject" stroke="#888" />
@@ -525,26 +522,6 @@ const AthletePerformanceTracking = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 bg-primary hover:bg-secondary text-white py-3 rounded-lg transition-colors"
-                >
-                  <FaStar className="inline-block mr-2" />
-                  Add to Shortlist
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-lg transition-colors"
-                >
-                  <FaVideo className="inline-block mr-2" />
-                  Request Match Videos
-                </motion.button>
-              </div>
             </>
           )}
         </div>

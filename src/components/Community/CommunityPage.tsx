@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaSearch, FaUserFriends, FaVideo, FaImage, FaPoll, FaGlobe, FaHeart, FaComment, FaShare, FaTrophy, FaCalendarAlt, FaUsers, FaRobot } from 'react-icons/fa';
-import { db, auth } from '../config/firebase';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { FaSearch, FaVideo, FaImage, FaPoll, FaHeart, FaComment, FaShare, FaTrophy, FaCalendarAlt, FaUsers, FaRobot } from 'react-icons/fa';
+import { auth } from '../config/firebase';
 
 interface Post {
   id: string;
@@ -10,7 +9,8 @@ interface Post {
     id: string;
     name: string;
     avatar: string;
-    sport: string;
+    type: 'user' | 'federation' | 'club'; // Add type to distinguish between users, federations, and clubs
+    sport?: string;
     verified?: boolean;
   };
   content: string;
@@ -50,11 +50,27 @@ interface Group {
   icon: string;
 }
 
+interface Federation {
+  Name: string;
+  Abbreviation: string;
+  Image: string;
+}
+
+interface Club {
+  Name: string;
+  Location: string;
+  Image: string;
+  Details: string;
+  Abbreviation?: string;
+}
+
 const CommunityPage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [trendingAthletes, setTrendingAthletes] = useState<TrendingAthlete[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [federations, setFederations] = useState<Federation[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
   const [newPost, setNewPost] = useState('');
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,15 +86,16 @@ const CommunityPage = () => {
             id: '1',
             author: {
               id: '1',
-              name: 'John Smith',
-              avatar: 'https://i.pravatar.cc/150?img=1',
-              sport: 'Football',
+              name: 'Boxing Federation of India',
+              avatar: 'https://example.com/images/gurpreet-sandhu.jpg',
+              type: 'federation',
+              sport: 'Boxing',
               verified: true
             },
-            content: 'Just completed an intense training session! 💪 Working on improving my sprint speed. Any tips from fellow athletes?',
+            content: 'We are excited to announce the upcoming National Boxing Championship! 🥊 Register now and showcase your skills.',
             media: {
               type: 'image',
-              url: 'https://source.unsplash.com/random/800x600/?football'
+              url: 'https://source.unsplash.com/random/800x600/?boxing'
             },
             likes: 124,
             comments: 18,
@@ -90,11 +107,12 @@ const CommunityPage = () => {
             id: '2',
             author: {
               id: '2',
-              name: 'Sarah Johnson',
-              avatar: 'https://i.pravatar.cc/150?img=2',
-              sport: 'Swimming'
+              name: 'Mohun Bagan Super Giant',
+              avatar: 'https://example.com/images/gurpreet-sandhu.jpg',
+              type: 'club',
+              sport: 'Football'
             },
-            content: 'New personal best in 100m freestyle! 🏊‍♀️ Months of dedication finally paying off. Remember: consistency is key!',
+            content: 'Join us for our annual football trials! ⚽ We are looking for talented players to join our team.',
             likes: 89,
             comments: 12,
             shares: 3,
@@ -156,10 +174,41 @@ const CommunityPage = () => {
           }
         ];
 
+        const mockFederations: Federation[] = [
+          {
+            Name: 'All India Football Federation',
+            Abbreviation: 'AIFF',
+            Image: 'https://example.com/images/gurpreet-sandhu.jpg'
+          },
+          {
+            Name: 'Athletics Federation of India',
+            Abbreviation: 'AFI',
+            Image: 'https://example.com/images/gurpreet-sandhu.jpg'
+          }
+        ];
+
+        const mockClubs: Club[] = [
+          {
+            Name: 'Bengaluru Federation Club',
+            Location: 'Bengaluru',
+            Image: 'https://example.com/images/gurpreet-sandhu.jpg',
+            Details: 'A relatively young club'
+          },
+          {
+            Name: 'Karnataka State Cricket Association',
+            Abbreviation: 'KSCA',
+            Location: 'Karnataka',
+            Image: 'https://example.com/images/gurpreet-sandhu.jpg',
+            Details: 'Cricket association in Karnataka'
+          }
+        ];
+
         setPosts(mockPosts);
         setTrendingAthletes(mockTrendingAthletes);
         setEvents(mockEvents);
         setGroups(mockGroups);
+        setFederations(mockFederations);
+        setClubs(mockClubs);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -177,9 +226,10 @@ const CommunityPage = () => {
     const post: Post = {
       id: Date.now().toString(),
       author: {
-        id: auth.currentUser?.uid || '0',
-        name: auth.currentUser?.displayName || 'Anonymous',
-        avatar: auth.currentUser?.photoURL || 'https://i.pravatar.cc/150',
+        id: auth.currentUser?.uid ?? '0',
+        name: auth.currentUser?.displayName ?? 'Anonymous',
+        avatar: auth.currentUser?.photoURL ?? 'https://i.pravatar.cc/150',
+        type: 'user',
         sport: 'Football'
       },
       content: newPost,
@@ -219,13 +269,21 @@ const CommunityPage = () => {
     return num.toString();
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <div className="text-white text-2xl">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-dark">
       {/* Header */}
       <div className="sticky top-0 bg-dark/80 backdrop-blur-lg border-b border-white/10 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Athlete Community</h1>
+            <h1 className="text-2xl font-bold">Recruiter Community</h1>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -310,6 +368,41 @@ const CommunityPage = () => {
                 </div>
               </div>
             </motion.div>
+
+            {/* Groups Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/10 rounded-xl p-6"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <FaUsers className="text-primary text-xl" />
+                <h2 className="text-xl font-semibold">Groups</h2>
+              </div>
+
+              <div className="space-y-4">
+                {groups.map((group) => (
+                  <motion.div
+                    key={group.id}
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-white/5 p-4 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{group.icon}</span>
+                      <div>
+                        <h3 className="font-semibold">{group.name}</h3>
+                        <p className="text-sm text-gray-400">
+                          {group.category}
+                        </p>
+                        <p className="text-sm text-primary">
+                          {formatNumber(group.members)} members
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           </div>
 
           {/* Main Feed */}
@@ -322,7 +415,7 @@ const CommunityPage = () => {
             >
               <div className="flex gap-4 mb-4">
                 <img
-                  src={auth.currentUser?.photoURL || 'https://i.pravatar.cc/150'}
+                  src={auth.currentUser?.photoURL ?? 'https://i.pravatar.cc/150'}
                   alt="Profile"
                   className="w-12 h-12 rounded-full"
                 />
@@ -384,7 +477,7 @@ const CommunityPage = () => {
                         {post.author.verified && (
                           <span className="text-primary">✓</span>
                         )}
-                        <span className="text-gray-400">• {post.author.sport}</span>
+                        <span className="text-gray-400">• {post.author.type === 'federation' ? 'Federation' : post.author.type === 'club' ? 'Club' : post.author.sport}</span>
                       </div>
                       <p className="mb-4">{post.content}</p>
                       {post.media && (
@@ -467,7 +560,7 @@ const CommunityPage = () => {
               </div>
             </motion.div>
 
-            {/* Group Discussions */}
+            {/* Federations and Clubs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -475,23 +568,50 @@ const CommunityPage = () => {
             >
               <div className="flex items-center gap-3 mb-6">
                 <FaUsers className="text-primary text-xl" />
-                <h2 className="text-xl font-semibold">Group Discussions</h2>
+                <h2 className="text-xl font-semibold">Federations & Clubs</h2>
               </div>
 
               <div className="space-y-4">
-                {groups.map((group) => (
+                {federations.map((federation) => (
                   <motion.div
-                    key={group.id}
+                    key={federation.Name}
                     whileHover={{ scale: 1.02 }}
                     className="bg-white/5 p-4 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">{group.icon}</span>
+                      <img
+                        src={federation.Image}
+                        alt={federation.Name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
                       <div>
-                        <h3 className="font-semibold">{group.name}</h3>
+                        <h3 className="font-semibold">{federation.Name}</h3>
                         <p className="text-sm text-gray-400">
-                          {formatNumber(group.members)} members
+                          {federation.Abbreviation}
                         </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {clubs.map((club) => (
+                  <motion.div
+                    key={club.Name}
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-white/5 p-4 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={club.Image}
+                        alt={club.Name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <h3 className="font-semibold">{club.Name}</h3>
+                        <p className="text-sm text-gray-400">
+                          {club.Location}
+                        </p>
+                        <p className="text-sm text-primary">{club.Details}</p>
                       </div>
                     </div>
                   </motion.div>

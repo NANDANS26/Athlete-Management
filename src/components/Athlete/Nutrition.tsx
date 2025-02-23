@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUtensils, FaPlus, FaTrash, FaRobot, FaAppleAlt, FaClock, FaBrain, FaCalendar } from 'react-icons/fa';
-import { collection, addDoc, query, where, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import type { AthleteData } from './AthleteDashboard';
 
@@ -337,7 +337,7 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
                     value={newMeal.foodName}
                     onChange={handleInputChange}
                     required
-                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     placeholder="Enter food name"
                   />
                 </div>
@@ -351,7 +351,7 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
                     value={newMeal.mealType}
                     onChange={handleInputChange}
                     required
-                    className="w-full bg-black/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                   >
                     <option value="">Select Meal Type</option>
                     <option value="breakfast">Breakfast</option>
@@ -374,7 +374,7 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
                     onChange={handleInputChange}
                     required
                     min="0"
-                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     placeholder="kcal"
                   />
                 </div>
@@ -390,7 +390,7 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
                     onChange={handleInputChange}
                     required
                     min="0"
-                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     placeholder="g"
                   />
                 </div>
@@ -406,7 +406,7 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
                     onChange={handleInputChange}
                     required
                     min="0"
-                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     placeholder="g"
                   />
                 </div>
@@ -422,7 +422,7 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
                     onChange={handleInputChange}
                     required
                     min="0"
-                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     placeholder="g"
                   />
                 </div>
@@ -438,7 +438,7 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
                   value={newMeal.date}
                   onChange={handleInputChange}
                   required
-                  className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                  className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                 />
               </div>
 

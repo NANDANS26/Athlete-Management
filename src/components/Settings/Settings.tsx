@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaUser, FaBell, FaCog, FaLock, FaWifi, FaApple, FaGoogle, FaSignOutAlt, FaMoon, FaSun, FaRobot, FaHeadset } from 'react-icons/fa';
+import { FaUser, FaBell, FaLock, FaWifi, FaApple, FaGoogle, FaSignOutAlt, FaMoon, FaSun, FaRobot, FaHeadset } from 'react-icons/fa';
 import { auth } from '../config/firebase';
-import { useNavigate } from 'react-router-dom';
 
 interface WearableDevice {
   name: string;
@@ -13,11 +12,10 @@ interface WearableDevice {
 }
 
 const Settings = () => {
-  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(true);
   const [personalInfo, setPersonalInfo] = useState({
     name: '',
-    email: auth.currentUser?.email || '',
+    email: auth.currentUser?.email ?? '',
     phone: '',
     country: '',
     bio: ''
@@ -75,14 +73,6 @@ const Settings = () => {
     );
   };
 
-  const handleSignOut = async () => {
-    try {
-      await auth.signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-dark p-8">

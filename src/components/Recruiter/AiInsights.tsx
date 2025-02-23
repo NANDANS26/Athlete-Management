@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaChartLine, FaHeartbeat, FaRunning, FaBrain, FaExclamationTriangle, FaAppleAlt, FaChartBar, FaGlobe, FaUserTie, FaRobot, FaSearch } from 'react-icons/fa';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie, Cell } from 'recharts';
+import { FaChartLine, FaHeartbeat, FaRunning, FaBrain, FaExclamationTriangle, FaAppleAlt, FaChartBar, FaSearch, FaRobot } from 'react-icons/fa';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import athleteData from '../config/athlete.json'; // Import the JSON data
 
 interface AthleteInsight {
   id: string;
@@ -30,58 +31,91 @@ interface AthleteInsight {
   recommendations: string[];
 }
 
+interface AthleteComparison {
+  Name: string;
+  Age: number;
+  Place: string;
+  Position: string;
+  Awards: string | null;
+  Image: string;
+  performanceScore: number; // Make this required
+}
+
 const AIInsights = () => {
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteInsight | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [athletes, setAthletes] = useState<AthleteInsight[]>([]);
   const [activeTab, setActiveTab] = useState<'performance' | 'nutrition' | 'injury' | 'comparison'>('performance');
+  const [comparisonData, setComparisonData] = useState<AthleteComparison[]>([]);
 
   // Simulate fetching athlete data
   useEffect(() => {
-    const mockAthletes: AthleteInsight[] = [
-      {
-        id: '1',
-        name: 'John Smith',
-        sport: 'Football',
-        age: 22,
-        metrics: {
-          trainingEfficiency: 85,
-          nutritionBalance: 78,
-          recoveryRate: 92,
-          injuryRisk: 15,
-          performance: 88,
-          potential: 95
-        },
-        trends: Array.from({ length: 30 }, (_, i) => ({
-          date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toLocaleDateString(),
-          performance: 70 + Math.random() * 20,
-          recovery: 75 + Math.random() * 15,
-          nutrition: 80 + Math.random() * 10
-        })),
-        alerts: [
-          {
-            type: 'warning',
-            message: 'Slight decrease in recovery rate detected',
-            timestamp: new Date()
-          }
-        ],
-        recommendations: [
-          'Increase protein intake by 20g daily',
-          'Add two rest days this week',
-          'Focus on explosive power training'
-        ]
-      }
-    ];
+    const mockAthlete: AthleteInsight = {
+      id: '1',
+      name: 'John Smith',
+      sport: 'Football',
+      age: 22,
+      metrics: {
+        trainingEfficiency: 85,
+        nutritionBalance: 78,
+        recoveryRate: 92,
+        injuryRisk: 15,
+        performance: 88,
+        potential: 95
+      },
+      trends: Array.from({ length: 30 }, (_, i) => ({
+        date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        performance: 70 + Math.random() * 20,
+        recovery: 75 + Math.random() * 15,
+        nutrition: 80 + Math.random() * 10
+      })),
+      alerts: [
+        {
+          type: 'warning',
+          message: 'Slight decrease in recovery rate detected',
+          timestamp: new Date()
+        }
+      ],
+      recommendations: [
+        'Increase protein intake by 20g daily',
+        'Add two rest days this week',
+        'Focus on explosive power training'
+      ]
+    };
 
-    setAthletes(mockAthletes);
-    setSelectedAthlete(mockAthletes[0]);
+    setSelectedAthlete(mockAthlete);
   }, []);
 
-  const getMetricColor = (value: number) => {
-    if (value >= 85) return '#22c55e';
-    if (value >= 70) return '#eab308';
-    return '#ef4444';
-  };
+  // Fetch comparison data based on the selected athlete's sport
+  useEffect(() => {
+    if (selectedAthlete) {
+      const sport = selectedAthlete.sport;
+      const athletesInSport = athleteData[sport as keyof typeof athleteData] || [];
+      // Add a random performance score to each athlete for ranking
+      const athletesWithScores = athletesInSport.map((athlete) => ({
+        ...athlete,
+        performanceScore: Math.floor(Math.random() * 100) // Ensure this is always defined
+      }));
+      setComparisonData(athletesWithScores.sort((a, b) => b.performanceScore - a.performanceScore)); // Sort by performance score
+    }
+  }, [selectedAthlete]);
+
+  // Simulate real-time updates to the leaderboard
+  useEffect(() => {
+    if (activeTab === 'comparison') {
+      const interval = setInterval(() => {
+        setComparisonData((prevData) => {
+          return prevData
+            .map((athlete) => ({
+              ...athlete,
+              performanceScore: Math.max(0, Math.min(100, athlete.performanceScore + Math.floor(Math.random() * 10 - 5))) // Randomly adjust scores
+            }))
+            .sort((a, b) => b.performanceScore - a.performanceScore); // Sort by performance score
+        });
+      }, 3000); // Update every 3 seconds
+
+      return () => clearInterval(interval); // Cleanup interval on unmount
+    }
+  }, [activeTab]);
 
   const renderPerformanceAnalysis = () => (
     <div className="space-y-6">
@@ -237,6 +271,7 @@ const AIInsights = () => {
                     { name: 'Carbs', value: 50 },
                     { name: 'Fats', value: 20 }
                   ]}
+                  dataKey="value"
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -451,6 +486,58 @@ const AIInsights = () => {
     </div>
   );
 
+  const renderAthleteComparison = () => (
+    <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/5 p-6 rounded-lg"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <FaChartBar className="text-primary text-xl" />
+          <h3 className="text-xl font-semibold">Athlete Leaderboard</h3>
+        </div>
+        <div className="space-y-4">
+          {comparisonData.map((athlete, index) => (
+            <motion.div
+              key={athlete.Name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex items-center justify-between bg-white/5 p-4 rounded-lg"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 flex items-center justify-center bg-primary/10 rounded-full">
+                  <span className="text-primary font-semibold">{index + 1}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={athlete.Image}
+                    alt={athlete.Name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <h3 className="font-semibold">{athlete.Name}</h3>
+                    <p className="text-sm text-gray-400">{athlete.Position}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-24 bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-primary rounded-full h-2"
+                    style={{ width: `${athlete.performanceScore}%` }}
+                  />
+                </div>
+                <span className="text-sm text-gray-400">{athlete.performanceScore}%</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-dark p-8">
       {/* Header & Search */}
@@ -503,6 +590,7 @@ const AIInsights = () => {
         {activeTab === 'performance' && renderPerformanceAnalysis()}
         {activeTab === 'nutrition' && renderNutritionAnalysis()}
         {activeTab === 'injury' && renderInjuryAnalysis()}
+        {activeTab === 'comparison' && renderAthleteComparison()}
       </AnimatePresence>
     </div>
   );

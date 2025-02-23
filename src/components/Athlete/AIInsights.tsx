@@ -1832,7 +1832,7 @@ const AIInsights = ({ athleteData }: AIInsightsProps) => {
             <h2 className="text-xl font-semibold">Performance Timeline</h2>
           </div>
           <div className="flex gap-2">
-            {['week', 'month', 'year'].map((timeframe) => (
+            {['week'].map((timeframe) => (
               <button
                 key={timeframe}
                 onClick={() => setSelectedTimeframe(timeframe as any)}

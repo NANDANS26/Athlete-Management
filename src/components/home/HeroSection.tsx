@@ -22,7 +22,7 @@ const HeroSection = () => {
           className="w-full h-full object-cover"
         >
           <source
-            src="https://videocdn.cdnpk.net/videos/5c7b2c6b-3552-4ddf-b7b3-0d81e52c7789/horizontal/previews/clear/large.mp4?token=exp=1739466304~hmac=d0eb80c030fb05e1ad0817dff696fb5c967f85f6a691515d3229462e8c6004e8"
+            src="/null.mp4"
             type="video/mp4"
           />
         </video>

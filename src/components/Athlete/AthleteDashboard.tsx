@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaHome, FaClock, FaUtensils, FaDumbbell, FaChartLine, FaHeartbeat, FaVideo, FaHandshake, FaCog, FaRobot, FaBell, FaUsers, FaChartBar } from 'react-icons/fa';
+import { FaHome, FaClock, FaUtensils, FaDumbbell, FaChartLine, FaHeartbeat, FaHandshake, FaCog, FaRobot, FaBell, FaUsers, FaChartBar } from 'react-icons/fa';
 import Sidebar from './Sidebar';
 import Overview from './Overview';
 import WearableSync from './WearableSync';

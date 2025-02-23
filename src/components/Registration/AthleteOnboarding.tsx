@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FaDumbbell, FaUtensils, FaRunning, FaHeart, FaBrain, FaCheckCircle, FaRocket } from 'react-icons/fa';
+import { FaDumbbell, FaUtensils, FaHeart, FaBrain, FaCheckCircle, FaRocket } from 'react-icons/fa';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import Particles from 'react-particles';
@@ -98,6 +98,45 @@ const AthleteOnboarding = () => {
                   </p>
                 </div>
               </div>
+              <div className="flex items-start gap-4">
+                <div className="bg-primary/20 p-2 rounded">
+                  <span className="text-primary">4 PM</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Afternoon Snack</h4>
+                  <p className="text-sm text-gray-400">
+                    Greek yogurt with berries
+                    <br />
+                    Handful of nuts
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="bg-primary/20 p-2 rounded">
+                  <span className="text-primary">7 PM</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Dinner</h4>
+                  <p className="text-sm text-gray-400">
+                    Grilled salmon with sweet potato
+                    <br />
+                    Steamed broccoli
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="bg-primary/20 p-2 rounded">
+                  <span className="text-primary">9 PM</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Evening Snack</h4>
+                  <p className="text-sm text-gray-400">
+                    Cottage cheese with pineapple
+                    <br />
+                    Herbal tea
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -115,6 +154,10 @@ const AthleteOnboarding = () => {
                 Protein supplements
                 <br />
                 Essential vitamins and minerals
+                <br />
+                Omega-3 fatty acids
+                <br />
+                Creatine monohydrate
               </p>
             </div>
           </div>
@@ -161,6 +204,50 @@ const AthleteOnboarding = () => {
                     <li>• Active Recovery</li>
                     <li>• Light Mobility Work</li>
                     <li>• Mental Preparation</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/5 p-6 rounded-lg">
+            <h3 className="text-xl font-semibold mb-4">Detailed Training Plan</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white/10 p-4 rounded-lg">
+                  <h4 className="font-semibold text-primary mb-2">Strength Training</h4>
+                  <ul className="space-y-2 text-sm text-gray-400">
+                    <li>• Squats: 4 sets of 8-12 reps</li>
+                    <li>• Deadlifts: 4 sets of 6-10 reps</li>
+                    <li>• Bench Press: 4 sets of 8-12 reps</li>
+                    <li>• Pull-Ups: 3 sets of 8-10 reps</li>
+                    <li>• Core Work: Planks, Russian Twists</li>
+                  </ul>
+                </div>
+                <div className="bg-white/10 p-4 rounded-lg">
+                  <h4 className="font-semibold text-primary mb-2">Speed & Agility</h4>
+                  <ul className="space-y-2 text-sm text-gray-400">
+                    <li>• Sprints: 10 x 40m</li>
+                    <li>• Ladder Drills: 3 sets</li>
+                    <li>• Cone Drills: 3 sets</li>
+                    <li>• Plyometrics: Box Jumps, Depth Jumps</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white/10 p-4 rounded-lg">
+                  <h4 className="font-semibold text-primary mb-2">Endurance Training</h4>
+                  <ul className="space-y-2 text-sm text-gray-400">
+                    <li>• Long-Distance Runs: 5-10km</li>
+                    <li>• Interval Training: 1 min sprint, 2 min jog</li>
+                    <li>• Hill Sprints: 10 x 100m</li>
+                  </ul>
+                </div>
+                <div className="bg-white/10 p-4 rounded-lg">
+                  <h4 className="font-semibold text-primary mb-2">Recovery & Mobility</h4>
+                  <ul className="space-y-2 text-sm text-gray-400">
+                    <li>• Foam Rolling: Full Body</li>
+                    <li>• Stretching: Dynamic & Static</li>
+                    <li>• Yoga: 30-45 minutes</li>
                   </ul>
                 </div>
               </div>

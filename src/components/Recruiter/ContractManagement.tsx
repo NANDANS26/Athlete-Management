@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaFileContract, FaRobot, FaUserTie, FaChartLine, FaComments, FaSignature, FaBell, FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
+import { FaFileContract, FaRobot, FaUserTie, FaChartLine, FaComments, FaCheckCircle, FaSpinner } from 'react-icons/fa';
+
+// Import the JSON data (replace with your actual JSON data)
+import athletesData from '../config/athlete.json'; // Adjust the path as needed
 
 interface Athlete {
   id: string;
@@ -9,7 +12,9 @@ interface Athlete {
   age: number;
   marketValue: number;
   image: string;
-  status: 'pending' | 'negotiating' | 'accepted' | 'rejected';
+  status: 'pending' | 'negotiating' | 'accepted' | 'rejected'; // Specific status values
+  position: string;
+  awards?: string | null; // Allow awards to be string or null
 }
 
 interface ContractTemplate {
@@ -29,21 +34,9 @@ const ContractManagement = () => {
     bonuses: true,
     incentives: []
   });
+  const [selectedSport, setSelectedSport] = useState<string>('');
 
-  // Mock data
-  const athletes: Athlete[] = [
-    {
-      id: '1',
-      name: 'John Smith',
-      sport: 'Football',
-      age: 22,
-      marketValue: 75000,
-      image: 'https://i.pravatar.cc/150?img=1',
-      status: 'pending'
-    },
-    // Add more athletes...
-  ];
-
+  // Mock contract templates
   const contractTemplates: ContractTemplate[] = [
     {
       id: '1',
@@ -65,6 +58,21 @@ const ContractManagement = () => {
     }
   ];
 
+  // Filter athletes by selected sport
+  const filteredAthletes = selectedSport
+    ? athletesData[selectedSport as keyof typeof athletesData].map((player) => ({
+        id: player.Name.replace(/\s+/g, '-').toLowerCase(),
+        name: player.Name,
+        sport: selectedSport,
+        age: player.Age,
+        marketValue: Math.floor(Math.random() * 100000) + 50000, // Random market value for demo
+        image: player.Image,
+        status: ['pending', 'negotiating', 'accepted', 'rejected'][Math.floor(Math.random() * 4)] as 'pending' | 'negotiating' | 'accepted' | 'rejected',
+        position: player.Position,
+        awards: player.Awards ?? null // Ensure awards is either string or null
+      }))
+    : [];
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -80,9 +88,19 @@ const ContractManagement = () => {
     }
   };
 
+  // Function to send the contract
   const handleSendContract = () => {
-    // Implementation for sending contract
-    console.log('Sending contract...');
+    if (!selectedAthlete || !selectedTemplate) {
+      alert('Please select an athlete and a contract template.');
+      return;
+    }
+
+    // Simulate sending the contract
+    console.log('Contract sent to:', selectedAthlete.name);
+    console.log('Contract Terms:', contractTerms);
+
+    // Show a confirmation message
+    alert(`Contract sent to ${selectedAthlete.name}. Awaiting response.`);
   };
 
   return (
@@ -95,8 +113,22 @@ const ContractManagement = () => {
             <h2 className="text-xl font-semibold">Shortlisted Athletes</h2>
           </div>
 
+          {/* Sport Filter Dropdown */}
+          <select
+            value={selectedSport}
+            onChange={(e) => setSelectedSport(e.target.value)}
+            className="w-full bg-white/10 rounded-lg px-4 py-3 mb-6"
+          >
+            <option value="">Select Sport</option>
+            {Object.keys(athletesData).map((sport) => (
+              <option key={sport} value={sport}>
+                {sport}
+              </option>
+            ))}
+          </select>
+
           <div className="space-y-4">
-            {athletes.map((athlete) => (
+            {filteredAthletes.map((athlete) => (
               <motion.div
                 key={athlete.id}
                 whileHover={{ scale: 1.02 }}
@@ -116,8 +148,13 @@ const ContractManagement = () => {
                   <div className="flex-1">
                     <h3 className="font-semibold">{athlete.name}</h3>
                     <p className="text-sm text-gray-400">
-                      {athlete.sport} • {athlete.age} years
+                      {athlete.sport} • {athlete.position} • {athlete.age} years
                     </p>
+                    {athlete.awards && (
+                      <p className="text-sm text-gray-400 mt-1">
+                        Awards: {athlete.awards}
+                      </p>
+                    )}
                   </div>
                   <span className={`text-sm ${getStatusColor(athlete.status)}`}>
                     {athlete.status}

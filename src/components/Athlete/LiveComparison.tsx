@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaChartLine, FaDumbbell, FaHeartbeat, FaBrain, FaUsers, FaTrophy, FaFilter } from 'react-icons/fa';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import type { AthleteData } from './AthleteDashboard';
+import athletesData from '../config/athlete.json'; // Import the JSON data
 
 interface LiveComparisonProps {
   athleteData: AthleteData;
@@ -16,16 +17,22 @@ interface ComparisonMetric {
 }
 
 interface PerformanceData {
-  date: string;
+  metric: string;
   athlete: number;
-  average: number;
-  top: number;
+  others: number;
+}
+
+interface IndividualComparisonData {
+  name: string;
+  athlete: number;
+  otherPlayer: number;
 }
 
 const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
   const [selectedMetric, setSelectedMetric] = useState('overall');
   const [comparisonType, setComparisonType] = useState<'global' | 'friends' | 'ai'>('global');
-  const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
+  const [barData, setBarData] = useState<PerformanceData[]>([]);
+  const [individualComparisonData, setIndividualComparisonData] = useState<IndividualComparisonData[]>([]);
   const [radarData, setRadarData] = useState<ComparisonMetric[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,20 +40,46 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
   // Simulate fetching comparison data
   useEffect(() => {
     const generateData = () => {
-      // Generate performance timeline data
-      const timelineData: PerformanceData[] = [];
-      const now = new Date();
-      for (let i = 30; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        timelineData.push({
-          date: date.toLocaleDateString(),
-          athlete: 60 + Math.random() * 30,
-          average: 50 + Math.random() * 20,
-          top: 80 + Math.random() * 15
-        });
-      }
-      setPerformanceData(timelineData);
+      // Generate bar chart data based on the selected sport
+      const sportAthletes = athletesData[athleteData.sport as keyof typeof athletesData];
+      const athleteMetrics = {
+        overall: 85,
+        strength: 75,
+        endurance: 80,
+        technique: 70,
+      };
+
+      const barMetrics: PerformanceData[] = [
+        {
+          metric: 'Overall Performance',
+          athlete: athleteMetrics.overall,
+          others: sportAthletes.reduce((sum, athlete) => sum + (athlete.Age || 0), 0) / sportAthletes.length, // Example calculation
+        },
+        {
+          metric: 'Strength',
+          athlete: athleteMetrics.strength,
+          others: sportAthletes.reduce((sum, athlete) => sum + (athlete.Age || 0), 0) / sportAthletes.length, // Example calculation
+        },
+        {
+          metric: 'Endurance',
+          athlete: athleteMetrics.endurance,
+          others: sportAthletes.reduce((sum, athlete) => sum + (athlete.Age || 0), 0) / sportAthletes.length, // Example calculation
+        },
+        {
+          metric: 'Technique',
+          athlete: athleteMetrics.technique,
+          others: sportAthletes.reduce((sum, athlete) => sum + (athlete.Age || 0), 0) / sportAthletes.length, // Example calculation
+        },
+      ];
+      setBarData(barMetrics);
+
+      // Generate individual comparison data
+      const individualData: IndividualComparisonData[] = sportAthletes.map((player) => ({
+        name: player.Name,
+        athlete: athleteMetrics.overall, // Use overall performance for comparison
+        otherPlayer: player.Age || 0, // Example: Using Age as a metric
+      }));
+      setIndividualComparisonData(individualData);
 
       // Generate radar chart data
       const radarMetrics: ComparisonMetric[] = [
@@ -54,32 +87,32 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
           category: 'Strength',
           athlete: 85,
           average: 70,
-          top: 95
+          top: 95,
         },
         {
           category: 'Speed',
           athlete: 75,
           average: 65,
-          top: 90
+          top: 90,
         },
         {
           category: 'Endurance',
           athlete: 80,
           average: 60,
-          top: 85
+          top: 85,
         },
         {
           category: 'Agility',
           athlete: 70,
           average: 65,
-          top: 88
+          top: 88,
         },
         {
           category: 'Recovery',
           athlete: 90,
           average: 75,
-          top: 92
-        }
+          top: 92,
+        },
       ];
       setRadarData(radarMetrics);
 
@@ -88,7 +121,7 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
         "Your endurance is 20% above average but 10% below top performers. Consider high-intensity interval training.",
         "Recovery rate is exceptional - in the top 5% of athletes in your category!",
         "Strength metrics show room for improvement. Adding compound exercises could help bridge the gap.",
-        "Your consistency in training is paying off - performance variance is 15% lower than average."
+        "Your consistency in training is paying off - performance variance is 15% lower than average.",
       ];
       setInsights(newInsights);
 
@@ -96,19 +129,19 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
     };
 
     generateData();
-  }, []);
+  }, [athleteData.sport]);
 
   const metrics = [
     { id: 'overall', label: 'Overall Performance', icon: FaChartLine },
     { id: 'strength', label: 'Strength', icon: FaDumbbell },
     { id: 'endurance', label: 'Endurance', icon: FaHeartbeat },
-    { id: 'technique', label: 'Technique', icon: FaBrain }
+    { id: 'technique', label: 'Technique', icon: FaBrain },
   ];
 
   const comparisonTypes = [
     { id: 'global', label: 'Global Rankings', icon: FaTrophy },
     { id: 'friends', label: 'Friends', icon: FaUsers },
-    { id: 'ai', label: 'AI Suggested', icon: FaBrain }
+    { id: 'ai', label: 'AI Suggested', icon: FaBrain },
   ];
 
   if (loading) {
@@ -144,7 +177,7 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
             <h3 className="font-semibold">Select Metric</h3>
           </div>
           <div className="flex flex-wrap gap-2">
-            {metrics.map(metric => (
+            {metrics.map((metric) => (
               <motion.button
                 key={metric.id}
                 whileHover={{ scale: 1.05 }}
@@ -174,7 +207,7 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
             <h3 className="font-semibold">Compare With</h3>
           </div>
           <div className="flex flex-wrap gap-2">
-            {comparisonTypes.map(type => (
+            {comparisonTypes.map((type) => (
               <motion.button
                 key={type.id}
                 whileHover={{ scale: 1.05 }}
@@ -196,7 +229,7 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
 
       {/* Main Comparison Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Timeline Chart */}
+        {/* Bar Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -204,51 +237,29 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
         >
           <div className="flex items-center gap-3 mb-6">
             <FaChartLine className="text-primary text-2xl" />
-            <h2 className="text-xl font-semibold">Performance Timeline</h2>
+            <h2 className="text-xl font-semibold">Performance Comparison</h2>
           </div>
 
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={performanceData}>
+              <BarChart data={barData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                <XAxis dataKey="date" stroke="#888" />
+                <XAxis dataKey="metric" stroke="#888" />
                 <YAxis stroke="#888" />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid #666'
+                    border: '1px solid #666',
                   }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="athlete"
-                  name="You"
-                  stroke="#646cff"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="average"
-                  name="Average"
-                  stroke="#888888"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="top"
-                  name="Top Athletes"
-                  stroke="#00ff88"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
+                <Bar dataKey="athlete" name="You" fill="#646cff" />
+                <Bar dataKey="others" name="Others" fill="#888888" />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
 
-        {/* Radar Chart */}
+        {/* Individual Comparison Bar Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -256,47 +267,77 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
         >
           <div className="flex items-center gap-3 mb-6">
             <FaChartLine className="text-primary text-2xl" />
-            <h2 className="text-xl font-semibold">Performance Breakdown</h2>
+            <h2 className="text-xl font-semibold">Individual Player Comparison</h2>
           </div>
 
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                <PolarGrid stroke="#444" />
-                <PolarAngleAxis dataKey="category" stroke="#888" />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#888" />
-                <Radar
-                  name="You"
-                  dataKey="athlete"
-                  stroke="#646cff"
-                  fill="#646cff"
-                  fillOpacity={0.3}
-                />
-                <Radar
-                  name="Average"
-                  dataKey="average"
-                  stroke="#888888"
-                  fill="#888888"
-                  fillOpacity={0.3}
-                />
-                <Radar
-                  name="Top"
-                  dataKey="top"
-                  stroke="#00ff88"
-                  fill="#00ff88"
-                  fillOpacity={0.3}
-                />
+              <BarChart data={individualComparisonData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                <XAxis dataKey="name" stroke="#888" />
+                <YAxis stroke="#888" />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid #666'
+                    border: '1px solid #666',
                   }}
                 />
-              </RadarChart>
+                <Bar dataKey="athlete" name="You" fill="#646cff" />
+                <Bar dataKey="otherPlayer" name="Other Player" fill="#888888" />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
       </div>
+
+      {/* Performance Breakdown (Radar Chart) */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <FaChartLine className="text-primary text-2xl" />
+          <h2 className="text-xl font-semibold">Performance Breakdown</h2>
+        </div>
+
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+              <PolarGrid stroke="#444" />
+              <PolarAngleAxis dataKey="category" stroke="#888" />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#888" />
+              <Radar
+                name="You"
+                dataKey="athlete"
+                stroke="#646cff"
+                fill="#646cff"
+                fillOpacity={0.3}
+              />
+              <Radar
+                name="Average"
+                dataKey="average"
+                stroke="#888888"
+                fill="#888888"
+                fillOpacity={0.3}
+              />
+              <Radar
+                name="Top"
+                dataKey="top"
+                stroke="#00ff88"
+                fill="#00ff88"
+                fillOpacity={0.3}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  border: '1px solid #666',
+                }}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
 
       {/* AI Insights */}
       <motion.div
@@ -324,47 +365,6 @@ const LiveComparison = ({ athleteData }: LiveComparisonProps) => {
               </div>
             </motion.div>
           ))}
-        </div>
-      </motion.div>
-
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <FaDumbbell className="text-primary text-2xl" />
-          <h2 className="text-xl font-semibold">Suggested Actions</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-primary/20 hover:bg-primary/30 text-primary p-4 rounded-lg text-left"
-          >
-            <h3 className="font-semibold mb-2">Update Training Plan</h3>
-            <p className="text-sm">Apply AI-suggested improvements to your routine</p>
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-green-500/20 hover:bg-green-500/30 text-green-500 p-4 rounded-lg text-left"
-          >
-            <h3 className="font-semibold mb-2">Schedule Assessment</h3>
-            <p className="text-sm">Book a professional evaluation session</p>
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 p-4 rounded-lg text-left"
-          >
-            <h3 className="font-semibold mb-2">Share Progress</h3>
-            <p className="text-sm">Update your profile with latest achievements</p>
-          </motion.button>
         </div>
       </motion.div>
     </div>

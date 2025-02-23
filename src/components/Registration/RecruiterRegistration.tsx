@@ -36,7 +36,7 @@ const RecruiterRegistration = () => {
     experience: 0,
     ageGroup: '',
     region: '',
-    email: auth.currentUser?.email || '',
+    email: auth.currentUser?.email ?? '',
     phone: '',
     goals: ''
   });
@@ -110,8 +110,8 @@ const RecruiterRegistration = () => {
         profileComplete: true
       });
 
-      // Navigate to dashboard after successful save
-      navigate('/dashboard/recruiter');
+      // Navigate to welcome page after successful save
+      navigate('/welcome-recruiter');
     } catch (err) {
       console.error('Error saving recruiter data:', err);
       setError('Failed to save data. Please try again.');

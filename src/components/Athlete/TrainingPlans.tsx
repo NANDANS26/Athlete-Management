@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   FaDumbbell,
   FaRunning,
@@ -211,9 +211,6 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
     stressLevel: 40,
   });
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [showMotivationalMessage, setShowMotivationalMessage] = useState(false);
-  const [motivationalMessage, setMotivationalMessage] = useState('');
-
   // Simulate real-time health data updates
   useEffect(() => {
     const interval = setInterval(() => {
@@ -225,8 +222,9 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
         hydrationLevel: Math.max(0, Math.min(100, prev.hydrationLevel + Math.floor(Math.random() * 3) - 1)),
         stressLevel: Math.max(0, Math.min(100, prev.stressLevel + Math.floor(Math.random() * 4) - 2)),
       }));
+      console.log("Updated Health Metrics:", healthMetrics); // Log the updated state
     }, 3000);
-
+  
     return () => clearInterval(interval);
   }, []);
 
@@ -316,21 +314,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
     }
   };
 
-  const getMotivationalMessage = () => {
-    const messages = [
-      "You're crushing it! Keep pushing your limits! 💪",
-      "Every rep brings you closer to your goals! 🎯",
-      "Stay focused, stay strong! You've got this! 🔥",
-      "Making progress every day! Keep going! ⭐",
-    ];
-    return messages[Math.floor(Math.random() * messages.length)];
-  };
 
-  const showRandomMotivation = () => {
-    setMotivationalMessage(getMotivationalMessage());
-    setShowMotivationalMessage(true);
-    setTimeout(() => setShowMotivationalMessage(false), 5000);
-  };
 
   return (
     <div className="space-y-8">
@@ -553,7 +537,8 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           ))}
         </div>
       </motion.div>
-      
+
+{/* AI Recommendations */}
 {/* AI Recommendations */}
 <motion.div
   initial={{ opacity: 0, y: 20 }}
@@ -567,9 +552,9 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
 
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
     {/* Health Insights */}
-    <div className="space-y-4">
+    <div className="space-y-4 border-2 border-red-500"> {/* Debugging border */}
       {/* High Fatigue */}
-      {healthMetrics.fatigueLevel > 60 && ( // Adjusted threshold
+      {healthMetrics.fatigueLevel > 50 && ( // Adjusted threshold
         <div className="flex items-center gap-3 bg-red-500/20 p-4 rounded-lg">
           <FaExclamationTriangle className="text-red-500" />
           <div>

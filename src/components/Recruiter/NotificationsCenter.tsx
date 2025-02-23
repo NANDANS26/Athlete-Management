@@ -1,10 +1,23 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaBell, FaUserPlus, FaRobot, FaHeartbeat, FaChartLine, FaCalendarAlt, FaFilter, FaCheck, FaTrash, FaExclamationTriangle, FaFileContract, FaTrophy } from 'react-icons/fa';
+import {
+  FaBell,
+  FaUserPlus,
+  FaRobot,
+  FaHeartbeat,
+  FaChartLine,
+  FaCalendarAlt,
+  FaFilter,
+  FaCheck,
+  FaTrash,
+  FaFileContract,
+  FaFileAlt,
+  FaHandshake} from 'react-icons/fa';
+import athleteData from '../config/athlete.json'; // Import the JSON data
 
 interface Notification {
   id: string;
-  type: 'athlete_response' | 'application' | 'ai_insight' | 'injury' | 'performance' | 'event';
+  type: 'athlete_response' | 'application' | 'ai_insight' | 'injury' | 'performance' | 'event' | 'offer_acceptance' | 'report' | 'contract_update';
   title: string;
   message: string;
   timestamp: Date;
@@ -22,65 +35,34 @@ const NotificationsCenter = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sport, setSport] = useState<string>('Football'); // Default sport
 
-  // Simulate fetching notifications
+  // Fetch athlete data and generate notifications
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        // Mock notifications data
-        const mockNotifications: Notification[] = [
-          {
-            id: '1',
-            type: 'athlete_response',
-            title: 'Contract Accepted',
-            message: 'John Smith has accepted your contract offer! Review the details and proceed with onboarding.',
-            timestamp: new Date(),
-            read: false,
-            priority: 'high',
-            athleteName: 'John Smith',
-            athleteAvatar: 'https://i.pravatar.cc/150?img=1',
-            data: {
-              contractId: 'contract123',
-              position: 'Forward',
-              startDate: new Date().toISOString()
-            }
-          },
-          {
-            id: '2',
-            type: 'ai_insight',
-            title: 'AI Scouting Alert',
-            message: 'We\'ve identified 3 athletes that match your recruitment criteria with over 90% compatibility.',
-            timestamp: new Date(Date.now() - 3600000),
-            read: false,
-            priority: 'medium',
-            data: {
-              matches: [
-                { name: 'Sarah Johnson', compatibility: 95 },
-                { name: 'Mike Wilson', compatibility: 92 },
-                { name: 'Emma Davis', compatibility: 90 }
-              ]
-            }
-          },
-          {
-            id: '3',
-            type: 'injury',
-            title: 'Injury Risk Alert',
-            message: 'High injury risk detected for David Brown based on recent training data.',
-            timestamp: new Date(Date.now() - 7200000),
-            read: false,
-            priority: 'high',
-            athleteName: 'David Brown',
-            athleteAvatar: 'https://i.pravatar.cc/150?img=3',
-            data: {
-              riskFactor: 85,
-              recommendations: [
-                'Reduce training intensity',
-                'Schedule rest day',
-                'Focus on recovery'
-              ]
+        // Get athletes for the chosen sport
+        const athletesInSport = athleteData[sport as keyof typeof athleteData] || [];
+
+        // Generate mock notifications based on athletes
+        const mockNotifications: Notification[] = athletesInSport.map((athlete, index) => ({
+          id: `athlete-${index + 1}`,
+          type: 'performance', // Default type
+          title: 'Performance Update',
+          message: `${athlete.Name} has shown significant improvement in their performance metrics.`,
+          timestamp: new Date(),
+          read: false,
+          priority: 'medium',
+          athleteName: athlete.Name,
+          athleteAvatar: athlete.Image,
+          data: {
+            metrics: {
+              speed: Math.floor(Math.random() * 100),
+              stamina: Math.floor(Math.random() * 100),
+              accuracy: Math.floor(Math.random() * 100)
             }
           }
-        ];
+        }));
 
         setNotifications(mockNotifications);
         setUnreadCount(mockNotifications.filter(n => !n.read).length);
@@ -95,30 +77,34 @@ const NotificationsCenter = () => {
 
     // Simulate real-time notifications
     const interval = setInterval(() => {
-      const newNotification: Notification = {
-        id: Date.now().toString(),
-        type: 'performance',
-        title: 'Performance Milestone',
-        message: `Athlete ${Math.random() > 0.5 ? 'Sarah Johnson' : 'Mike Wilson'} has improved their speed by 10%!`,
-        timestamp: new Date(),
-        read: false,
-        priority: 'medium',
-        athleteName: Math.random() > 0.5 ? 'Sarah Johnson' : 'Mike Wilson',
-        athleteAvatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 10)}`,
-        data: {
-          metric: 'speed',
-          improvement: 10,
-          previousValue: 85,
-          newValue: 93.5
-        }
-      };
+      const athletesInSport = athleteData[sport as keyof typeof athleteData] || [];
+      if (athletesInSport.length > 0) {
+        const randomAthlete = athletesInSport[Math.floor(Math.random() * athletesInSport.length)];
+        const newNotification: Notification = {
+          id: Date.now().toString(),
+          type: 'performance',
+          title: 'Performance Milestone',
+          message: `${randomAthlete.Name} has improved their speed by ${Math.floor(Math.random() * 10)}%!`,
+          timestamp: new Date(),
+          read: false,
+          priority: 'medium',
+          athleteName: randomAthlete.Name,
+          athleteAvatar: randomAthlete.Image,
+          data: {
+            metric: 'speed',
+            improvement: Math.floor(Math.random() * 10),
+            previousValue: Math.floor(Math.random() * 100),
+            newValue: Math.floor(Math.random() * 100)
+          }
+        };
 
-      setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => prev + 1);
+        setNotifications(prev => [newNotification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      }
     }, 30000); // New notification every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [sport]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -132,6 +118,12 @@ const NotificationsCenter = () => {
         return <FaChartLine className="text-blue-500" />;
       case 'event':
         return <FaCalendarAlt className="text-yellow-500" />;
+      case 'offer_acceptance':
+        return <FaHandshake className="text-purple-500" />;
+      case 'report':
+        return <FaFileAlt className="text-orange-500" />;
+      case 'contract_update':
+        return <FaFileContract className="text-teal-500" />;
       default:
         return <FaBell className="text-gray-500" />;
     }
@@ -209,6 +201,27 @@ const NotificationsCenter = () => {
           </div>
         </div>
 
+        {/* Sport Selector */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium text-gray-400 mb-2">Select Sport</label>
+          <select
+            value={sport}
+            onChange={(e) => setSport(e.target.value)}
+            className="bg-white/10 text-white p-2 rounded-lg focus:ring-2 focus:ring-primary"
+          >
+            <option value="Football">Football</option>
+            <option value="Basketball">Basketball</option>
+            <option value="Boxing">Boxing</option>
+            <option value="Swimming">Swimming</option>
+            <option value="Tennis">Tennis</option>
+            <option value="Badminton">Badminton</option>
+            <option value="Rugby">Rugby</option>
+            <option value="Hockey">Hockey</option>
+            <option value="Athletics">Athletics</option>
+            <option value="Cricket">Cricket</option>
+          </select>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Sidebar - Filters */}
           <div className="lg:col-span-1 space-y-6">
@@ -229,7 +242,10 @@ const NotificationsCenter = () => {
                   { id: 'ai_insight', label: 'AI Insights', icon: FaRobot },
                   { id: 'injury', label: 'Injury Alerts', icon: FaHeartbeat },
                   { id: 'performance', label: 'Performance Updates', icon: FaChartLine },
-                  { id: 'event', label: 'Events', icon: FaCalendarAlt }
+                  { id: 'event', label: 'Events', icon: FaCalendarAlt },
+                  { id: 'offer_acceptance', label: 'Offer Acceptances', icon: FaHandshake },
+                  { id: 'report', label: 'Performance Reports', icon: FaFileAlt },
+                  { id: 'contract_update', label: 'Contract Updates', icon: FaFileContract }
                 ].map(filter => (
                   <motion.button
                     key={filter.id}
@@ -245,42 +261,6 @@ const NotificationsCenter = () => {
                     <span>{filter.label}</span>
                   </motion.button>
                 ))}
-              </div>
-            </motion.div>
-
-            {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-white/10 rounded-xl p-6"
-            >
-              <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
-              <div className="space-y-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  className="w-full bg-white/5 hover:bg-white/10 p-4 rounded-lg text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <FaFileContract className="text-primary" />
-                    <div>
-                      <h3 className="font-semibold">Review Contracts</h3>
-                      <p className="text-sm text-gray-400">3 pending reviews</p>
-                    </div>
-                  </div>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  className="w-full bg-white/5 hover:bg-white/10 p-4 rounded-lg text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <FaTrophy className="text-yellow-500" />
-                    <div>
-                      <h3 className="font-semibold">Top Prospects</h3>
-                      <p className="text-sm text-gray-400">5 new matches</p>
-                    </div>
-                  </div>
-                </motion.button>
               </div>
             </motion.div>
           </div>
@@ -393,31 +373,17 @@ const NotificationsCenter = () => {
 
                     {selectedNotification.data && (
                       <div className="bg-white/5 p-4 rounded-lg">
-                        {selectedNotification.type === 'ai_insight' && (
+                        {selectedNotification.type === 'performance' && (
                           <div>
-                            <h4 className="font-semibold mb-2">Matched Athletes</h4>
+                            <h4 className="font-semibold mb-2">Performance Metrics</h4>
                             <div className="space-y-2">
-                              {selectedNotification.data.matches.map((match: any, index: number) => (
-                                <div key={index} className="flex justify-between items-center">
-                                  <span>{match.name}</span>
-                                  <span className="text-primary">{match.compatibility}%</span>
+                              {Object.entries(selectedNotification.data.metrics).map(([metric, value], index) => (
+                                <div key={index} className="flex justify-between">
+                                  <span>{metric}:</span>
+                                  <span className="text-primary">{(value as number)}%</span>
                                 </div>
                               ))}
                             </div>
-                          </div>
-                        )}
-
-                        {selectedNotification.type === 'injury' && (
-                          <div>
-                            <h4 className="font-semibold mb-2">Recommendations</h4>
-                            <ul className="space-y-2">
-                              {selectedNotification.data.recommendations.map((rec: string, index: number) => (
-                                <li key={index} className="flex items-center gap-2">
-                                  <FaExclamationTriangle className="text-yellow-500" />
-                                  <span>{rec}</span>
-                                </li>
-                              ))}
-                            </ul>
                           </div>
                         )}
                       </div>

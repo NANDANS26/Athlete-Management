@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaHandshake, FaUniversity, FaTrophy, FaChartLine, FaBell, FaFileContract } from 'react-icons/fa';
+import { FaHandshake, FaTrophy, FaChartLine, FaBell, FaFileContract } from 'react-icons/fa';
 import type { AthleteData } from './AthleteDashboard';
 
 interface RecruitmentProps {
@@ -58,12 +58,17 @@ const Recruitment = ({ athleteData }: RecruitmentProps) => {
     recruitmentScore: 85
   });
 
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+
   const aiInsights = [
     "Your recent performance metrics indicate high interest from professional clubs",
     "Consider the State University offer for long-term career development",
     "Your market value has increased by 25% in the last 3 months",
     "Recommended: Attend the National Team tryout for exposure"
   ];
+
+  // Simulate real-time data updates
+  
 
   const handleOfferAction = (offerId: string, action: 'accept' | 'decline') => {
     setOffers(prev => prev.map(offer => 
@@ -86,6 +91,14 @@ const Recruitment = ({ athleteData }: RecruitmentProps) => {
       default:
         return 'text-gray-500';
     }
+  };
+
+  const handleOfferClick = (offer: Offer) => {
+    setSelectedOffer(offer);
+  };
+
+  const closeModal = () => {
+    setSelectedOffer(null);
   };
 
   return (
@@ -172,7 +185,8 @@ const Recruitment = ({ athleteData }: RecruitmentProps) => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white/5 p-6 rounded-lg"
+              className="bg-white/5 p-6 rounded-lg cursor-pointer hover:bg-white/10 transition-colors"
+              onClick={() => handleOfferClick(offer)}
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -205,7 +219,10 @@ const Recruitment = ({ athleteData }: RecruitmentProps) => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => handleOfferAction(offer.id, 'accept')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOfferAction(offer.id, 'accept');
+                      }}
                       className="px-4 py-2 bg-green-500/20 text-green-500 rounded-lg hover:bg-green-500/30 transition-colors"
                     >
                       Accept
@@ -213,7 +230,10 @@ const Recruitment = ({ athleteData }: RecruitmentProps) => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => handleOfferAction(offer.id, 'decline')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOfferAction(offer.id, 'decline');
+                      }}
                       className="px-4 py-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors"
                     >
                       Decline
@@ -252,6 +272,33 @@ const Recruitment = ({ athleteData }: RecruitmentProps) => {
           ))}
         </div>
       </motion.div>
+
+      {/* Offer Letter Modal */}
+      {selectedOffer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white/10 backdrop-blur-lg p-8 rounded-xl max-w-2xl w-full"
+          >
+            <h2 className="text-2xl font-bold mb-4">Offer Letter</h2>
+            <div className="space-y-4">
+              <p><strong>Organization:</strong> {selectedOffer.organization}</p>
+              <p><strong>Title:</strong> {selectedOffer.title}</p>
+              <p><strong>Description:</strong> {selectedOffer.description}</p>
+              {selectedOffer.value && <p><strong>Value:</strong> {selectedOffer.value}</p>}
+              <p><strong>Deadline:</strong> {new Date(selectedOffer.deadline).toLocaleDateString()}</p>
+              <p><strong>Status:</strong> <span className={getStatusColor(selectedOffer.status)}>{selectedOffer.status.toUpperCase()}</span></p>
+            </div>
+            <button
+              onClick={closeModal}
+              className="mt-6 px-4 py-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors"
+            >
+              Close
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

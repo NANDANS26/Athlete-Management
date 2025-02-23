@@ -1,0 +1,423 @@
+{
+  "Football": [
+    {
+      "Name": "Anirudh Thapa",
+      "Age": 27,
+      "Place": "Uttarakhand",
+      "Position": "Midfielder",
+      "Awards": "International Continental Cup",
+      "Image": "/textures/tapa.jpg"
+    },
+    {
+      "Name": "Gurpreet Singh Sandhu",
+      "Age": 33,
+      "Place": "Punjab",
+      "Position": "Goalkeeper",
+      "Awards": "Arjuna Awards",
+      "Image": "/textures/Gurpreet-Singh-Sandhu.jpg"
+    },
+    {
+      "Name": "Vishal Kaith",
+      "Age": 28,
+      "Place": "Himachal Pradesh",
+      "Position": "Goalkeeper",
+      "Awards": "Indian Super League (ISL)",
+      "Image": "/textures/vishal kaits.jpg"
+    },
+    {
+      "Name": "Lalengmawia Ralte",
+      "Age": 24,
+      "Place": "Mizoram",
+      "Position": "Midfielder",
+      "Image": "/textures/Lalawmpuia.jpg",
+      "Awards": "2022 AFC Champions League"
+    },
+    {
+      "Name": "Halicharan Narzary",
+      "Age": 30,
+      "Place": "Assam",
+      "Position": "Winger",
+      "Awards": "2015 SAFF Championship",
+      "Image": "/textures/halicharan.jpg"
+    },
+    {
+      "Name": "Sandesh Jhingan",
+      "Age": 32,
+      "Place": "Chandigarh",
+      "Position": "Defender",
+      "Awards": "2022 Durand Cup",
+      "Image": "/textures/sandesh.jpg"
+    },
+    {
+      "Name": "Farukh Choudhary",
+      "Age": 28,
+      "Place": "Maharashtra",
+      "Position": "Winger",
+      "Awards": "ISL Match on September 14, 2024",
+      "Image": "/textures/Farukh-Choudhary-.jpg"
+    }
+  ],
+  "Basketball": [
+    {
+      "Name": "Tobias Harris",
+      "Age": 32,
+      "Place": "Islip, NYC",
+      "Position": "Power Forward",
+      "Awards": null,
+      "Image": "/textures/tobias.jpg"
+    },
+    {
+      "Name": "Satnam Singh",
+      "Age": 29,
+      "Place": "Punjab",
+      "Position": "Center",
+      "Awards": "Senior National Basketball Championship",
+      "Image": "/textures/satnam.jpg"
+    },
+    {
+      "Name": "Aryan Sharma",
+      "Age": 21,
+      "Place": "Delhi",
+      "Position": "Center",
+      "Awards": null,
+      "Image": "/textures/aryan sharma.jpg"
+    },
+    {
+      "Name": "Ambati Prudhvi Reddy",
+      "Age": 29,
+      "Place": "Telangana",
+      "Position": "Point Guard",
+      "Awards": "South Asian Basketball Association (SABA)",
+      "Image": "/textures/prudhvi-reddy.jpg"
+    },
+    {
+      "Name": "Akilan Pari",
+      "Age": 35,
+      "Place": "Chennai",
+      "Position": "Point Guard",
+      "Awards": null,
+      "Image": "/textures/Akilan pari.jpg"
+    },
+    {
+      "Name": "Vishesh Bhriguvanshi",
+      "Age": 34,
+      "Place": "Uttar Pradesh",
+      "Position": "Shooting Guard",
+      "Awards": "Bronze medal at the 37th National Games in Goa in 2023",
+      "Image": "/textures/Vishesh Bhriguvanshi.jpg"
+    },
+    {
+      "Name": "Grigo Matten Verghus",
+      "Age": 27,
+      "Place": "Kerala",
+      "Position": "Shooting Guard",
+      "Awards": "Cyprus National Championship",
+      "Image": "/textures/grigo.jpg"
+    }
+  ],
+  "Boxing": [
+    {
+      "Name": "Deepak Bhorina",
+      "Age": 28,
+      "Place": "Haryana",
+      "Position": "Flyweight",
+      "Awards": "Senior National Boxing Championships",
+      "Image": "/textures/deepak Bhoria.jpg"
+    },
+    {
+      "Name": "Nitu Ghanghas",
+      "Age": 24,
+      "Place": "Haryana",
+      "Position": "Light Flyweight",
+      "Awards": "Indian National Boxing Championships",
+      "Image": "/textures/nitu.jpg"
+    },
+    {
+      "Name": "Gaurav Bidhuri",
+      "Age": 30,
+      "Place": "Delhi",
+      "Position": "Bantamweight",
+      "Awards": "Indian National Boxing Championships",
+      "Image": "/textures/Gaurav.jpg"
+    },
+    {
+      "Name": "Felix Alvarado",
+      "Age": 36,
+      "Place": "Nicaragua",
+      "Position": "Light Flyweight",
+      "Awards": "AIBA World Boxing Championships",
+      "Image": "/textures/felix-alvarado.jpg"
+    }
+  ],
+  "Swimming": [
+    {
+      "Name": "Sayan Prakash",
+      "Age": 31,
+      "Place": "Kerala",
+      "Position": "Butterfly and Freestyle",
+      "Awards": "Indian National Swimming Championship",
+      "Image": "h/textures/Sayan.jpg"
+    },
+    {
+      "Name": "Srihari Nataraj",
+      "Age": 24,
+      "Place": "Karnataka",
+      "Position": "Backstroke",
+      "Awards": "Indian National Swimming Championships",
+      "Image": "/textures/srihari.jpg"
+    },
+    {
+      "Name": "Maana Patel",
+      "Age": 24,
+      "Place": "Ahmedabad",
+      "Position": "Backstroke",
+      "Awards": "South Asian Games",
+      "Image": "/textures/Maana Patel.jpg"
+    },
+    {
+      "Name": "Backstroke",
+      "Age": 31,
+      "Place": "West Bengal",
+      "Position": "Long-distance Freestyle",
+      "Awards": null,
+      "Image": "/textures/Back storke.jpg"
+    },
+    {
+      "Name": "Nisha Millet",
+      "Age": 42,
+      "Place": "Karnataka",
+      "Position": "Freestyle and Backstroke",
+      "Awards": null,
+      "Image": "/textures/nisha millet.jpg"
+    }
+  ],
+  "Tennis": [
+    {
+      "Name": "Ankita Raina",
+      "Age": 32,
+      "Place": "Gujarat",
+      "Position": "Singles and Doubles Player",
+      "Awards": null,
+      "Image": "/textures/ankita.jpg"
+    },
+    {
+      "Name": "Saketh Myneni",
+      "Age": 37,
+      "Place": "Andhra Pradesh",
+      "Position": "Singles and Doubles Player",
+      "Awards": null,
+      "Image":"/textures/Saketh Mynnei.jpg"
+    },
+    {
+      "Name": "Nishesh Basavareddy",
+      "Age": 20,
+      "Place": "Andhra Pradesh",
+      "Position": "Singles Player",
+      "Awards": null,
+      "Image": "https://example.com/images/gurpreet-sandhu.jpg"
+    },
+    {
+      "Name": "Sumit Nagal",
+      "Age": 28,
+      "Place": "Haryana",
+      "Position": "Singles Player",
+      "Awards": null,
+      "Image": "/textures/Sumit-Nagal.jpg"
+    }
+  ],
+  "Badminton": [
+    {
+      "Name": "Sinchana",
+      "Age": 23,
+      "Place": "Telangana",
+      "Position": "Women's Singles",
+      "Awards": null,
+      "Image": "/textures/sinchana.jpg"
+    },
+    {
+      "Name": "Saina Nehwal",
+      "Age": 34,
+      "Place": "Haryana",
+      "Position": "Women's Singles",
+      "Awards": null,
+      "Image": "https://example.com/images/gurpreet-sandhu.jpg"
+    },
+    {
+      "Name": "Kidambi Srikanth",
+      "Age": 32,
+      "Place": "Andhra Pradesh",
+      "Position": "Men's Singles",
+      "Awards": null,
+      "Image": "/textures/Kidambi-Srikanth.jpg"
+    },
+    {
+      "Name": "Ashwini Ponnappa",
+      "Age": 35,
+      "Place": "Karnataka",
+      "Position": "Women's Doubles & Mixed Doubles",
+      "Awards": null,
+      "Image": "/textures/ashwini ponnappa.jpg"
+    },
+    {
+      "Name": "Satwiksairaj Rankireddy",
+      "Age": 35,
+      "Place": "Karnataka",
+      "Position": "Men's Doubles & Mixed Doubles",
+      "Awards": null,
+      "Image": "https://example.com/images/gurpreet-sandhu.jpg"
+    },
+    {
+      "Name": "HS Prannoy",
+      "Age": 31,
+      "Place": "Thiruvananthapuram, Kerala",
+      "Position": "Men's Singles",
+      "Awards": "Thomas Cup 2022",
+      "Image": "/textures/HSPrannoy.jpg"
+    }
+  ],
+  "Rugby": [
+    {
+      "Name": "Prince Khatri",
+      "Age": 29,
+      "Place": "Haryana",
+      "Position": "Center",
+      "Awards": null,
+      "Image": "/textures/Prince-Khatri.jpg"
+    },
+    {
+      "Name": "Mohit Kumar",
+      "Age": 25,
+      "Place": "Haryana",
+      "Position": "Center",
+      "Awards": null,
+      "Image": "/textures/mohit-kumar.jpg"
+    }
+  ],
+  "Hockey": [
+    {
+      "Name": "Manpreet Singh",
+      "Age": 32,
+      "Place": "Punjab",
+      "Position": "Midfielder",
+      "Awards": null,
+      "Image": "/textures/Manpreet-Singh.jpg"
+    },
+    {
+      "Name": "P.R. Sreejesh",
+      "Age": 37,
+      "Place": "Kerala",
+      "Position": "Goal Keeper",
+      "Awards": null,
+      "Image": "/textures/Sreejesh.jpg"
+    },
+    {
+      "Name": "Sanjay Rona",
+      "Age": 23,
+      "Place": "Haryana",
+      "Position": "Defender",
+      "Awards": null,
+      "Image": "/textures/sanjay.jpg"
+    },
+    {
+      "Name": "Rani Rampal",
+      "Age": 30,
+      "Place": "Haryana",
+      "Position": "Forward",
+      "Awards": null,
+      "Image": "/textures/rani-rampal.jpg"
+    }
+  ],
+  "Athletics": [
+    {
+      "Name": "Neeraj Chopra",
+      "Age": 27,
+      "Place": "Haryana",
+      "Position": "Javelin Throw",
+      "Awards": null,
+      "Image": "/textures/neeraj.jpg"
+    },
+    {
+      "Name": "Hima Das",
+      "Age": 26,
+      "Place": "Assam",
+      "Position": "400 meters",
+      "Awards": null,
+      "Image": "/textures/Hima-Das.jpg"
+    },
+    {
+      "Name": "Murali Sreeshankar",
+      "Age": 25,
+      "Place": "Kerala",
+      "Position": "Long Jump",
+      "Awards": null,
+      "Image": "/textures/murali-sreeshankar.jpg"
+
+    },
+    {
+      "Name": "Dutee Chand",
+      "Age": 29,
+      "Place": "Odisha",
+      "Position": "100 meters, 200 meters",
+      "Awards": null,
+      "Image": "https://example.com/images/gurpreet-sandhu.jpg"
+    }
+  ],
+  "Cricket": [
+    {
+      "Name": "Priya Singh",
+      "Age": 25,
+      "Place": "Jaipur",
+      "Position": "Batsman",
+      "Awards": "Emerging Talent Award (2023)",
+      "Image": "/textures/priya singh.jpg"
+    },
+    {
+      "Name": "Ishank Jaggi",
+      "Age": 35,
+      "Place": "Jamshedpur",
+      "Position": "Batsman",
+      "Image": "/textures/Ishank.jpg",
+      "Awards": "Ranji Trophy and Syed Mushtaq Ali Trophy"
+    },
+    {
+      "Name": "Rajat Paliwal",
+      "Age": 33,
+      "Place": "Haryana",
+      "Position": "Batsman",
+      "Image": "/textures/Rajat-Paliwal.jpg",
+      "Awards": "Scored a century in the Syed Mushtaq Ali Trophy (2019)"
+    },
+    {
+      "Name": "Rishi Dhawan",
+      "Age": 33,
+      "Place": "Himachal Pradesh",
+      "Position": "All-rounder",
+      "Image": "/textures/rishi-dhawan.jpg",
+      "Awards": "Part of the India U-19 World Cup-winning team (2008)"
+    },
+    {
+      "Name": "Baba Indrajith",
+      "Age": 29,
+      "Place": "Tamil Nadu",
+      "Position": "Batsman",
+      "Image": "/textures/Baba-Idrajith.jpg",
+      "Awards": "Scored a double century in the Ranji Trophy (2017)"
+    },
+    {
+      "Name": "Anureet Singh",
+      "Age": 35,
+      "Place": "Punjab",
+      "Position": "Bowler",
+      "Image": "/textures/anureet.jpg",
+      "Awards": "Known for his consistent performances in the Ranji Trophy"
+    },
+    {
+      "Name": "Shubham Chaubey",
+      "Age": 27,
+      "Place": "Uttar Pradesh",
+      "Position": "All-rounder",
+      "Image": "/textures/shubham.jpg",
+      "Awards": "Emerging Player Award in the UPCA T20 League (2021)"
+    }
+  ]
+}

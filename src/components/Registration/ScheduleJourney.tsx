@@ -100,7 +100,7 @@ const ScheduleJourney = () => {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full bg-white/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary"
+                className="w-full bg-grey/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
@@ -115,7 +115,7 @@ const ScheduleJourney = () => {
               <select
                 value={preferredTime}
                 onChange={(e) => setPreferredTime(e.target.value)}
-                className="w-full bg-white/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary"
+                className="w-full bg-grey/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary"
                 required
               >
                 <option value="">Select preferred time</option>

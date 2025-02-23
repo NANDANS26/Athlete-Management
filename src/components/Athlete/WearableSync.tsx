@@ -1,6 +1,6 @@
 import { useState, useEffect, JSX } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaApple, FaGoogle, FaHeart, FaBed, FaTint, FaRunning, FaBrain, FaPlus, FaSync, FaBolt, FaCheck, FaTimes, FaStopwatch, FaHeartbeat, FaWalking, FaFire } from 'react-icons/fa';
+import { FaApple, FaGoogle, FaHeart, FaBed, FaTint, FaRunning, FaBrain, FaPlus, FaSync, FaBolt, FaTimes, FaStopwatch, FaHeartbeat, FaWalking, FaFire } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { AthleteData } from './AthleteDashboard';
 
@@ -132,7 +132,6 @@ const WearableSync = ({ }: WearableSyncProps) => {
       }
   
       const device = await navigator.bluetooth.requestDevice(options);
-      const server = await device.gatt?.connect();
   
       console.log(`Connected to ${device.name}`);
   
@@ -389,7 +388,7 @@ const WearableSync = ({ }: WearableSyncProps) => {
           <h2 className="text-xl font-semibold mb-6">Recent Exercises</h2>
           <div className="space-y-4">
             <AnimatePresence>
-              {recentExercises.map((exercise, index) => (
+              {recentExercises.map((exercise) => (
                 <motion.div
                   key={exercise.id}
                   initial={{ opacity: 0, x: -20 }}

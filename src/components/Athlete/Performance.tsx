@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  FaBolt, FaHeartbeat, FaRunning, FaTrophy, FaBed, FaMedal, FaChartLine, 
+  FaBolt, FaHeartbeat,  FaTrophy, FaBed, FaChartLine, 
   FaDumbbell, FaWeight, FaRulerVertical, FaPercentage, FaFire,
-  FaBrain, FaChartBar, FaCalendarCheck, FaStopwatch, FaArrowUp,
+  FaBrain, FaChartBar, FaArrowUp,
   FaArrowDown, FaMinus
 } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar } from 'recharts';
@@ -41,7 +41,7 @@ interface PerformanceMetric {
 
 const Performance = ({ athleteData }: PerformanceProps) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'week' | 'month' | 'year'>('month');
-  const [bodyMetrics, setBodyMetrics] = useState<BodyMetrics>({
+  const [bodyMetrics] = useState<BodyMetrics>({
     weight: 75,
     height: 180,
     bodyFat: 15,
@@ -201,7 +201,7 @@ const Performance = ({ athleteData }: PerformanceProps) => {
             <h2 className="text-xl font-semibold">Performance Trends</h2>
           </div>
           <div className="flex gap-2">
-            {['week', 'month', 'year'].map((timeframe) => (
+            {['month'].map((timeframe) => (
               <button
                 key={timeframe}
                 onClick={() => setSelectedTimeframe(timeframe as any)}

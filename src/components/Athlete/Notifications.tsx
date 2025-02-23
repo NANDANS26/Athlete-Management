@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaBell, FaRobot, FaTrophy, FaRunning, FaExclamationTriangle, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
-import type { AthleteData } from './AthleteDashboard';
-
-interface NotificationsProps {
-  athleteData: AthleteData;
-}
 
 interface Notification {
   id: string;
@@ -27,7 +22,7 @@ interface Notification {
   };
 }
 
-const Notifications = ({ athleteData }: NotificationsProps) => {
+const Notifications = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'ai' | 'recruitment' | 'training' | 'injury'>('all');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
@@ -36,6 +31,7 @@ const Notifications = ({ athleteData }: NotificationsProps) => {
   // Simulate fetching notifications from Firebase
   useEffect(() => {
     const mockNotifications: Notification[] = [
+      // AI Insights
       {
         id: '1',
         type: 'ai',
@@ -53,10 +49,26 @@ const Notifications = ({ athleteData }: NotificationsProps) => {
       },
       {
         id: '2',
+        type: 'ai',
+        title: 'New Performance Analysis',
+        description: 'Your latest performance metrics have been analyzed. Check out the detailed report for insights.',
+        timestamp: new Date(Date.now() - 86400000), // 1 day ago
+        read: false,
+        priority: 'medium',
+        actions: {
+          primary: {
+            label: 'View Report',
+            action: () => console.log('Viewing performance report')
+          }
+        }
+      },
+      // Recruitment
+      {
+        id: '3',
         type: 'recruitment',
         title: 'New Contract Offer',
         description: 'Elite Sports Club has shown interest in your profile and submitted a contract offer.',
-        timestamp: new Date(Date.now() - 3600000),
+        timestamp: new Date(Date.now() - 3600000), // 1 hour ago
         read: false,
         priority: 'high',
         actions: {
@@ -71,17 +83,79 @@ const Notifications = ({ athleteData }: NotificationsProps) => {
         }
       },
       {
-        id: '3',
+        id: '4',
+        type: 'recruitment',
+        title: 'Scout Interest',
+        description: 'A talent scout from Global Sports Agency has viewed your profile.',
+        timestamp: new Date(Date.now() - 172800000), // 2 days ago
+        read: false,
+        priority: 'medium',
+        actions: {
+          primary: {
+            label: 'View Details',
+            action: () => console.log('Viewing scout details')
+          }
+        }
+      },
+      // Training
+      {
+        id: '5',
+        type: 'training',
+        title: 'New Workout Plan',
+        description: 'Your coach has uploaded a new workout plan tailored to your goals.',
+        timestamp: new Date(Date.now() - 7200000), // 2 hours ago
+        read: false,
+        priority: 'medium',
+        actions: {
+          primary: {
+            label: 'View Plan',
+            action: () => console.log('Viewing workout plan')
+          }
+        }
+      },
+      {
+        id: '6',
+        type: 'training',
+        title: 'Training Session Reminder',
+        description: 'You have a scheduled training session tomorrow at 10:00 AM. Don’t forget!',
+        timestamp: new Date(Date.now() - 43200000), // 12 hours ago
+        read: false,
+        priority: 'low',
+        actions: {
+          primary: {
+            label: 'View Schedule',
+            action: () => console.log('Viewing training schedule')
+          }
+        }
+      },
+      // Injury Alerts
+      {
+        id: '7',
         type: 'injury',
         title: 'High Fatigue Warning',
         description: 'Our AI has detected elevated fatigue levels. Consider reducing training intensity for the next 48 hours.',
-        timestamp: new Date(Date.now() - 7200000),
+        timestamp: new Date(Date.now() - 7200000), // 2 hours ago
         read: false,
         priority: 'medium',
         actions: {
           primary: {
             label: 'View Recovery Plan',
             action: () => console.log('Viewing recovery plan')
+          }
+        }
+      },
+      {
+        id: '8',
+        type: 'injury',
+        title: 'Injury Risk Detected',
+        description: 'Your recent training data suggests a higher risk of injury. Please consult your physiotherapist.',
+        timestamp: new Date(Date.now() - 14400000), // 4 hours ago
+        read: false,
+        priority: 'high',
+        actions: {
+          primary: {
+            label: 'View Risk Report',
+            action: () => console.log('Viewing injury risk report')
           }
         }
       }
