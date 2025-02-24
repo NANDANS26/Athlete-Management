@@ -16,7 +16,7 @@ import {
 } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCSUJw1g6ijn0PEnP--YASZkWQmxUOlhg",
+  apiKey: "AIzaSyCSxUJw1g6ijn0PEnP--YASZkWQmxUOlhg",
   authDomain: "athlete-2381f.firebaseapp.com",
   projectId: "athlete-2381f",
   storageBucket: "athlete-2381f.firebasestorage.app",
