@@ -1,21 +1,253 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FaDumbbell, FaUtensils, FaHeart, FaBrain, FaCheckCircle, FaRocket } from 'react-icons/fa';
-import { doc, updateDoc } from 'firebase/firestore';
+import { FaDumbbell, FaUtensils, FaHeart, FaBrain, FaCheckCircle, FaRocket, FaSpinner } from 'react-icons/fa';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import Particles from 'react-particles';
 import { loadSlim } from "tsparticles-slim";
 import type { Engine } from "tsparticles-engine";
+import { generateNutritionPlan, generateTrainingPlan } from '../services/gemini';
+
+interface AthleteData {
+  sport: string;
+  position: string;
+  trainingGoal: string;
+}
+
+interface Meal {
+  mealType: string;
+  foodItems: string;
+  calories: number;
+  macronutrients: {
+    protein: number;
+    carbs: number;
+    fats: number;
+  };
+}
+
+interface NutritionDay {
+  day: string;
+  meals: Meal[];
+}
+
+interface Exercise {
+  name: string;
+  sets: number;
+  reps: number;
+  notes?: string;
+}
+
+interface TrainingSession {
+  focus: string;
+  exercises: Exercise[];
+  duration: string;
+  intensity: string;
+}
+
+interface TrainingDay {
+  day: string;
+  sessions: TrainingSession[];
+}
 
 const AthleteOnboarding = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(0);
   const [showOath, setShowOath] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [athleteData, setAthleteData] = useState<AthleteData | null>(null);
+  const [nutritionPlan, setNutritionPlan] = useState<NutritionDay[]>([]);
+  const [trainingPlan, setTrainingPlan] = useState<TrainingDay[]>([]);
+  const [generatingPlans, setGeneratingPlans] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const particlesInit = async (engine: Engine) => {
     await loadSlim(engine);
+  };
+
+  const cleanAndParseJSON = (jsonString: string): any => {
+    try {
+      // First try to parse directly
+      return JSON.parse(jsonString);
+    } catch (originalError) {
+      try {
+        // Clean common issues
+        let cleaned = jsonString
+          .replace(/```json/g, '')
+          .replace(/```/g, '')
+          .trim();
+
+        // Fix trailing commas
+        cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+
+        // Remove any comments
+        cleaned = cleaned.replace(/\/\/.*$/gm, '');
+
+        // Try parsing again
+        const result = JSON.parse(cleaned);
+        return result;
+      } catch (cleanedError) {
+        console.error('Failed to parse JSON after cleaning:', {
+          originalError,
+          cleanedError,
+          originalString: jsonString
+        });
+        throw new Error('The AI service returned invalid data. Please try again.');
+      }
+    }
+  };
+
+  const fetchAthleteData = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        navigate('/login');
+        return;
+      }
+
+      const athleteDoc = await getDoc(doc(db, 'athletes', userId));
+      if (!athleteDoc.exists()) {
+        throw new Error('Athlete profile not found');
+      }
+
+      const data = athleteDoc.data();
+      if (!data.sport || !data.position || !data.trainingGoal) {
+        throw new Error('Incomplete athlete profile');
+      }
+
+      setAthleteData(data as AthleteData);
+      setGeneratingPlans(true);
+      setError(null);
+
+      const [nutritionPlanResult, trainingPlanResult] = await Promise.all([
+        generateNutritionPlan(data.sport, data.position, data.trainingGoal),
+        generateTrainingPlan(data.sport, data.position, data.trainingGoal),
+      ]);
+
+      const nutritionData = cleanAndParseJSON(nutritionPlanResult);
+      const trainingData = cleanAndParseJSON(trainingPlanResult);
+
+      if (!nutritionData.days || !trainingData.days) {
+        throw new Error('Invalid plan structure received from AI');
+      }
+
+      setNutritionPlan(nutritionData.days);
+      setTrainingPlan(trainingData.days);
+    } catch (error) {
+      console.error('Error in fetchAthleteData:', error);
+      setError(error instanceof Error ? error.message : 'Failed to generate plans');
+      setNutritionPlan([]);
+      setTrainingPlan([]);
+    } finally {
+      setGeneratingPlans(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAthleteData();
+  }, []);
+
+  const NutritionTable = ({ days }: { days: NutritionDay[] }) => {
+    if (days.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-400 mb-4">No nutrition plan available</p>
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+          <button
+            onClick={fetchAthleteData}
+            className="mt-4 px-4 py-2 bg-primary/80 hover:bg-primary rounded-lg transition-colors"
+          >
+            Retry Generation
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-8">
+        {days.map((day) => (
+          <div key={day.day} className="bg-white/5 rounded-lg overflow-hidden">
+            <h3 className="text-xl font-bold p-4 bg-white/10">{day.day}</h3>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="p-3 text-left">Meal</th>
+                  <th className="p-3 text-left">Food Items</th>
+                  <th className="p-3 text-left">Calories</th>
+                  <th className="p-3 text-left">Macros (P/C/F)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {day.meals.map((meal, index) => (
+                  <tr key={index} className="border-b border-white/10 last:border-0">
+                    <td className="p-3 font-medium">{meal.mealType}</td>
+                    <td className="p-3">{meal.foodItems}</td>
+                    <td className="p-3">{meal.calories} kcal</td>
+                    <td className="p-3">
+                      {meal.macronutrients.protein}g / {meal.macronutrients.carbs}g / {meal.macronutrients.fats}g
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const TrainingTable = ({ days }: { days: TrainingDay[] }) => {
+    if (days.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-400 mb-4">No training plan available</p>
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+          <button
+            onClick={fetchAthleteData}
+            className="mt-4 px-4 py-2 bg-primary/80 hover:bg-primary rounded-lg transition-colors"
+          >
+            Retry Generation
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-8">
+        {days.map((day) => (
+          <div key={day.day} className="bg-white/5 rounded-lg overflow-hidden">
+            <h3 className="text-xl font-bold p-4 bg-white/10">{day.day}</h3>
+            {day.sessions.map((session, sessionIndex) => (
+              <div key={sessionIndex} className="mb-6 last:mb-0">
+                <div className="px-4 py-2 bg-white/5">
+                  <h4 className="font-semibold">
+                    {session.focus} • {session.duration} • {session.intensity} Intensity
+                  </h4>
+                </div>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="p-3 text-left">Exercise</th>
+                      <th className="p-3 text-left">Sets × Reps</th>
+                      <th className="p-3 text-left">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {session.exercises.map((exercise, exIndex) => (
+                      <tr key={exIndex} className="border-b border-white/10 last:border-0">
+                        <td className="p-3 font-medium">{exercise.name}</td>
+                        <td className="p-3">{exercise.sets} × {exercise.reps}</td>
+                        <td className="p-3 text-gray-300">{exercise.notes || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const sections = [
@@ -26,7 +258,7 @@ const AthleteOnboarding = () => {
         <div className="space-y-6">
           <p className="text-xl text-gray-300">
             Welcome to your personalized journey to athletic excellence. We've crafted a comprehensive
-            program tailored to your goals as a {auth.currentUser?.displayName} athlete.
+            program tailored to your goals as a {athleteData?.sport || "professional"} athlete.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white/5 p-4 rounded-lg">
@@ -46,221 +278,56 @@ const AthleteOnboarding = () => {
               <p className="text-sm text-gray-400">
                 Focus, discipline, and unwavering determination
               </p>
+              
             </div>
           </div>
+          <p className="text-gray-400 mt-4">
+              Please wait while the Nutrition and Training Plans is being generated by AI.....
+          </p>
         </div>
-      )
+      ),
     },
     {
       title: "Nutrition Plan",
       icon: <FaUtensils className="text-5xl text-green-500 mb-6" />,
       content: (
         <div className="space-y-6">
-          <div className="bg-white/5 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-4">Daily Nutrition Schedule</h3>
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded">
-                  <span className="text-primary">6 AM</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Pre-Workout Meal</h4>
-                  <p className="text-sm text-gray-400">
-                    Oatmeal with banana and honey
-                    <br />
-                    Protein shake with almond milk
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded">
-                  <span className="text-primary">9 AM</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Post-Workout Nutrition</h4>
-                  <p className="text-sm text-gray-400">
-                    Grilled chicken breast with quinoa
-                    <br />
-                    Mixed vegetables and avocado
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded">
-                  <span className="text-primary">1 PM</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Lunch</h4>
-                  <p className="text-sm text-gray-400">
-                    Lean protein with complex carbs
-                    <br />
-                    Green leafy vegetables
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded">
-                  <span className="text-primary">4 PM</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Afternoon Snack</h4>
-                  <p className="text-sm text-gray-400">
-                    Greek yogurt with berries
-                    <br />
-                    Handful of nuts
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded">
-                  <span className="text-primary">7 PM</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Dinner</h4>
-                  <p className="text-sm text-gray-400">
-                    Grilled salmon with sweet potato
-                    <br />
-                    Steamed broccoli
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded">
-                  <span className="text-primary">9 PM</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Evening Snack</h4>
-                  <p className="text-sm text-gray-400">
-                    Cottage cheese with pineapple
-                    <br />
-                    Herbal tea
-                  </p>
-                </div>
-              </div>
+          {generatingPlans ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <FaSpinner className="text-4xl text-primary animate-spin mb-4" />
+              <p className="text-lg text-gray-300">Generating your personalized nutrition plan...</p>
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white/5 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Hydration</h3>
-              <p className="text-sm text-gray-400">
-                Minimum 3-4 liters of water daily
-                <br />
-                Electrolyte balance during training
-              </p>
+          ) : (
+            <div className="p-1 rounded-lg max-h-[60vh] overflow-y-auto">
+              <NutritionTable days={nutritionPlan} />
             </div>
-            <div className="bg-white/5 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Supplements</h3>
-              <p className="text-sm text-gray-400">
-                Protein supplements
-                <br />
-                Essential vitamins and minerals
-                <br />
-                Omega-3 fatty acids
-                <br />
-                Creatine monohydrate
-              </p>
-            </div>
-          </div>
+          )}
         </div>
-      )
+      ),
     },
     {
       title: "Training Schedule",
       icon: <FaDumbbell className="text-5xl text-yellow-500 mb-6" />,
       content: (
         <div className="space-y-6">
-          <div className="bg-white/5 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-4">Weekly Training Breakdown</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white/10 p-4 rounded-lg">
-                  <h4 className="font-semibold text-primary mb-2">Monday & Thursday</h4>
-                  <ul className="space-y-2 text-sm text-gray-400">
-                    <li>• Strength Training (1.5 hours)</li>
-                    <li>• Skill Development (1 hour)</li>
-                    <li>• Recovery & Stretching (30 mins)</li>
-                  </ul>
-                </div>
-                <div className="bg-white/10 p-4 rounded-lg">
-                  <h4 className="font-semibold text-primary mb-2">Tuesday & Friday</h4>
-                  <ul className="space-y-2 text-sm text-gray-400">
-                    <li>• Speed & Agility (1 hour)</li>
-                    <li>• Endurance Training (1 hour)</li>
-                    <li>• Technical Drills (1 hour)</li>
-                  </ul>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white/10 p-4 rounded-lg">
-                  <h4 className="font-semibold text-primary mb-2">Wednesday & Saturday</h4>
-                  <ul className="space-y-2 text-sm text-gray-400">
-                    <li>• Position-specific Training (2 hours)</li>
-                    <li>• Mental Conditioning (1 hour)</li>
-                  </ul>
-                </div>
-                <div className="bg-white/10 p-4 rounded-lg">
-                  <h4 className="font-semibold text-primary mb-2">Sunday</h4>
-                  <ul className="space-y-2 text-sm text-gray-400">
-                    <li>• Active Recovery</li>
-                    <li>• Light Mobility Work</li>
-                    <li>• Mental Preparation</li>
-                  </ul>
-                </div>
-              </div>
+          {generatingPlans ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <FaSpinner className="text-4xl text-primary animate-spin mb-4" />
+              <p className="text-lg text-gray-300">Generating your personalized training plan...</p>
             </div>
-          </div>
-          <div className="bg-white/5 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-4">Detailed Training Plan</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white/10 p-4 rounded-lg">
-                  <h4 className="font-semibold text-primary mb-2">Strength Training</h4>
-                  <ul className="space-y-2 text-sm text-gray-400">
-                    <li>• Squats: 4 sets of 8-12 reps</li>
-                    <li>• Deadlifts: 4 sets of 6-10 reps</li>
-                    <li>• Bench Press: 4 sets of 8-12 reps</li>
-                    <li>• Pull-Ups: 3 sets of 8-10 reps</li>
-                    <li>• Core Work: Planks, Russian Twists</li>
-                  </ul>
-                </div>
-                <div className="bg-white/10 p-4 rounded-lg">
-                  <h4 className="font-semibold text-primary mb-2">Speed & Agility</h4>
-                  <ul className="space-y-2 text-sm text-gray-400">
-                    <li>• Sprints: 10 x 40m</li>
-                    <li>• Ladder Drills: 3 sets</li>
-                    <li>• Cone Drills: 3 sets</li>
-                    <li>• Plyometrics: Box Jumps, Depth Jumps</li>
-                  </ul>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white/10 p-4 rounded-lg">
-                  <h4 className="font-semibold text-primary mb-2">Endurance Training</h4>
-                  <ul className="space-y-2 text-sm text-gray-400">
-                    <li>• Long-Distance Runs: 5-10km</li>
-                    <li>• Interval Training: 1 min sprint, 2 min jog</li>
-                    <li>• Hill Sprints: 10 x 100m</li>
-                  </ul>
-                </div>
-                <div className="bg-white/10 p-4 rounded-lg">
-                  <h4 className="font-semibold text-primary mb-2">Recovery & Mobility</h4>
-                  <ul className="space-y-2 text-sm text-gray-400">
-                    <li>• Foam Rolling: Full Body</li>
-                    <li>• Stretching: Dynamic & Static</li>
-                    <li>• Yoga: 30-45 minutes</li>
-                  </ul>
-                </div>
-              </div>
+          ) : (
+            <div className="p-1 rounded-lg max-h-[60vh] overflow-y-auto">
+              <TrainingTable days={trainingPlan} />
             </div>
-          </div>
+          )}
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   const handleNext = () => {
     if (currentSection < sections.length - 1) {
-      setCurrentSection(prev => prev + 1);
+      setCurrentSection((prev) => prev + 1);
     } else {
       setShowOath(true);
     }
@@ -275,12 +342,16 @@ const AthleteOnboarding = () => {
       await updateDoc(doc(db, 'athletes', userId), {
         onboardingCompleted: true,
         oathTaken: true,
-        updatedAt: new Date().toISOString()
+        nutritionPlan: JSON.stringify(nutritionPlan),
+        trainingPlan: JSON.stringify(trainingPlan),
+        updatedAt: new Date().toISOString(),
       });
 
       navigate('/dashboard/athlete');
     } catch (error) {
       console.error('Error updating athlete:', error);
+      setError('Failed to save your plans. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -313,7 +384,7 @@ const AthleteOnboarding = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative z-10 bg-white/10 backdrop-blur-lg p-8 rounded-2xl shadow-xl max-w-4xl w-full mx-4"
+            className="relative z-10 bg-white/10 backdrop-blur-lg p-8 rounded-2xl shadow-xl max-w-4xl w-full mx-4 my-8"
           >
             <div className="text-center mb-8">
               {sections[currentSection].icon}
@@ -335,7 +406,7 @@ const AthleteOnboarding = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setCurrentSection(prev => prev - 1)}
+                  onClick={() => setCurrentSection((prev) => prev - 1)}
                   className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
                 >
                   Previous
@@ -346,6 +417,7 @@ const AthleteOnboarding = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={handleNext}
                 className="px-6 py-2 bg-primary hover:bg-secondary rounded-lg transition-colors ml-auto"
+                disabled={generatingPlans}
               >
                 {currentSection === sections.length - 1 ? "Take the Oath" : "Next"}
               </motion.button>
@@ -378,13 +450,16 @@ const AthleteOnboarding = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleTakeOath}
-              disabled={loading}
+              disabled={loading || nutritionPlan.length === 0 || trainingPlan.length === 0}
               className={`flex items-center justify-center gap-2 bg-primary hover:bg-secondary 
-                text-white px-8 py-3 rounded-lg mx-auto ${loading ? 'opacity-50' : ''}`}
+                text-white px-8 py-3 rounded-lg mx-auto ${loading || nutritionPlan.length === 0 || trainingPlan.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <FaRocket />
               {loading ? "Processing..." : "I Accept This Oath"}
             </motion.button>
+            {(nutritionPlan.length === 0 || trainingPlan.length === 0) && (
+              <p className="text-red-400 mt-4">Please ensure both plans are generated before taking the oath</p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

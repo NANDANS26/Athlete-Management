@@ -1,21 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  FaDumbbell,
-  FaRunning,
-  FaHeart,
-  FaYinYang,
-  FaBrain,
-  FaHeartbeat,
-  FaTrophy,
-  FaChartLine,
-  FaWater,
-  FaBed,
-  FaMedal,
-  FaStopwatch,
-  FaExclamationTriangle,
+  FaDumbbell, FaRunning, FaHeart, FaYinYang, FaBrain, FaTrophy, FaChartLine, FaWater, FaBed, FaMedal, FaExclamationTriangle, FaSpinner, FaCheckCircle, FaSync
 } from 'react-icons/fa';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { AthleteData } from './AthleteDashboard';
+import { auth, db } from '../config/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 interface TrainingPlansProps {
   athleteData: AthleteData;
@@ -68,6 +59,27 @@ interface HealthMetrics {
 }
 
 
+interface RecommendationCardProps {
+  title: string;
+  icon: JSX.Element;
+  description: string;
+  details: React.ReactNode;
+}
+
+interface TrainingDistributionChartProps {
+  data: { name: string; value: number }[];
+}
+
+interface ToDoListProps {
+  items: string[];
+}
+
+interface AchievementBadgeProps {
+  title: string;
+  description: string;
+  progress: number;
+  target: number;
+}
 
 const workoutData: WorkoutData = {
   today: {
@@ -208,27 +220,167 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
     recoveryScore: 85,
     sleepQuality: 90,
     hydrationLevel: 75,
-    stressLevel: 40,
+    stressLevel: 25,
   });
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  // Simulate real-time health data updates
+  const [isLoadingAI] = useState(false);
+  
+  // Static data for Health Status, Training Recommendations, and Training Focus
+  const [staticHealthStatus, setStaticHealthStatus] = useState({
+    overall: 'Your health status is good, but there are areas for improvement.',
+    concerns: [
+      'Slight fatigue detected. Consider reducing training intensity for 1-2 days.',
+      'Hydration levels could be better. Aim to drink at least 3 liters of water daily.',
+    ],
+    positives: [
+      'Recovery score is excellent. Keep up the good work!',
+      'Sleep quality is optimal. Maintain a consistent sleep schedule.',
+    ],
+  });
+
+  const [staticTrainingRecommendations, setStaticTrainingRecommendations] = useState({
+    intensity: 'Moderate',
+    focusAreas: [
+      'Strength training: Focus on compound lifts like squats and deadlifts.',
+      'Endurance: Incorporate long-distance runs or cycling sessions.',
+    ],
+    modifications: [
+      'Increase protein intake to support muscle recovery.',
+      'Add more recovery days to prevent overtraining.',
+    ],
+  });
+
+  const [staticTrainingDistribution, setStaticTrainingDistribution] = useState({
+    strength: 30,
+    cardio: 30,
+    flexibility: 20,
+    recovery: 10,
+    skillWork: 10,
+  });
+
+  // Randomize static data on component mount
+  useEffect(() => {
+    const randomizeData = () => {
+      const randomHealthStatus = {
+        overall: 'Your health status is good, but there are areas for improvement.',
+        concerns: [
+          'Slight fatigue detected. Consider reducing training intensity for 1-2 days.',
+          'Hydration levels could be better. Aim to drink at least 3 liters of water daily.',
+        ],
+        positives: [
+          'Recovery score is excellent. Keep up the good work!',
+          'Sleep quality is optimal. Maintain a consistent sleep schedule.',
+        ],
+      };
+
+      const randomTrainingRecommendations = {
+        intensity: ['Low', 'Moderate', 'High'][Math.floor(Math.random() * 3)],
+        focusAreas: [
+          'Strength training: Focus on compound lifts like squats and deadlifts.',
+          'Endurance: Incorporate long-distance runs or cycling sessions.',
+        ],
+        modifications: [
+          'Increase protein intake to support muscle recovery.',
+          'Add more recovery days to prevent overtraining.',
+        ],
+      };
+
+      const randomTrainingDistribution = {
+        strength: Math.floor(Math.random() * 40) + 10,
+        cardio: Math.floor(Math.random() * 40) + 10,
+        flexibility: Math.floor(Math.random() * 20) + 10,
+        recovery: Math.floor(Math.random() * 20) + 10,
+        skillWork: Math.floor(Math.random() * 20) + 10,
+      };
+
+      setStaticHealthStatus(randomHealthStatus);
+      setStaticTrainingRecommendations(randomTrainingRecommendations);
+      setStaticTrainingDistribution(randomTrainingDistribution);
+    };
+
+    randomizeData();
+  }, []);
+
+  // Calculate Fatigue Level
+  const calculateFatigueLevel = (metrics: HealthMetrics): number => {
+    const { heartRate, sleepQuality, stressLevel, hydrationLevel } = metrics;
+    const fatigueScore =
+      heartRate * 0.3 +
+      (100 - sleepQuality) * 0.2 +
+      stressLevel * 0.3 +
+      (100 - hydrationLevel) * 0.2;
+    return Math.min(100, Math.max(0, Math.round(fatigueScore)));
+  };
+
+  // Calculate Recovery Score
+  const calculateRecoveryScore = (metrics: HealthMetrics): number => {
+    const { sleepQuality, stressLevel, hydrationLevel } = metrics;
+    const recoveryScore =
+      sleepQuality * 0.4 +
+      (100 - stressLevel) * 0.3 +
+      hydrationLevel * 0.3;
+    return Math.min(100, Math.max(0, Math.round(recoveryScore)));
+  };
+
+  // Fetch real-time health metrics from Firebase
+  useEffect(() => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'users', userId, 'healthMetrics', 'latest'),
+      (doc) => {
+        if (doc.exists()) {
+          const data = doc.data() as HealthMetrics;
+          setHealthMetrics((prev) => ({
+            ...prev,
+            heartRate: data.heartRate || prev.heartRate,
+            sleepQuality: data.sleepQuality || prev.sleepQuality,
+            hydrationLevel: data.hydrationLevel || prev.hydrationLevel,
+            stressLevel: data.stressLevel || prev.stressLevel,
+          }));
+          console.log('Fetched latest health metrics:', data);
+        } else {
+          console.log('No health metrics found in Firebase');
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // Simulate Health Metrics Updates
   useEffect(() => {
     const interval = setInterval(() => {
-      setHealthMetrics((prev) => ({
-        heartRate: prev.heartRate + Math.floor(Math.random() * 3) - 1,
-        fatigueLevel: Math.max(0, Math.min(100, prev.fatigueLevel + Math.floor(Math.random() * 5) - 2)),
-        recoveryScore: Math.max(0, Math.min(100, prev.recoveryScore + Math.floor(Math.random() * 4) - 2)),
-        sleepQuality: prev.sleepQuality,
-        hydrationLevel: Math.max(0, Math.min(100, prev.hydrationLevel + Math.floor(Math.random() * 3) - 1)),
-        stressLevel: Math.max(0, Math.min(100, prev.stressLevel + Math.floor(Math.random() * 4) - 2)),
-      }));
-      console.log("Updated Health Metrics:", healthMetrics); // Log the updated state
-    }, 3000);
-  
+      setHealthMetrics((prev) => {
+        const newHydrationLevel = Math.max(0, Math.min(100, prev.hydrationLevel + Math.floor(Math.random() * 3) - 1));
+        const newStressLevel = Math.max(0, Math.min(100, prev.stressLevel + Math.floor(Math.random() * 4) - 2));
+
+        return {
+          ...prev,
+          heartRate: prev.heartRate + Math.floor(Math.random() * 3) - 1,
+          fatigueLevel: calculateFatigueLevel({
+            ...prev,
+            hydrationLevel: newHydrationLevel,
+            stressLevel: newStressLevel,
+          }),
+          recoveryScore: calculateRecoveryScore({
+            ...prev,
+            hydrationLevel: newHydrationLevel,
+            stressLevel: newStressLevel,
+          }),
+          sleepQuality: prev.sleepQuality,
+          hydrationLevel: newHydrationLevel,
+          stressLevel: newStressLevel,
+        };
+      });
+      console.log("Updated Health Metrics:", healthMetrics);
+    }, 30000);
+
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize achievements
+  // Achievements
   useEffect(() => {
     setAchievements([
       {
@@ -264,7 +416,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
   const generateWorkout = (): WorkoutSection[] => {
     const dayWorkouts = workoutData[selectedDay as keyof typeof workoutData];
     const focusWorkouts = dayWorkouts[selectedGoal as keyof typeof dayWorkouts];
-  
+
     const workout: WorkoutSection[] = [
       {
         title: 'Warm-up',
@@ -297,7 +449,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
         ],
       },
     ];
-  
+
     return workout;
   };
 
@@ -314,7 +466,279 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
     }
   };
 
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
 
+  const RecommendationCard = ({ title, icon, description, details }: RecommendationCardProps) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/10 backdrop-blur-lg p-4 rounded-lg cursor-pointer"
+        role="button"
+        aria-label="Expand recommendation"
+        tabIndex={0}
+        onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-3">
+          {icon}
+          <h3 className="font-semibold">{title}</h3>
+        </div>
+        <p className="text-sm text-gray-300 mt-2">{description}</p>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            transition={{ duration: 0.3 }}
+            className="mt-4"
+          >
+            {details}
+          </motion.div>
+        )}
+      </motion.div>
+    );
+  };
+
+  const TrainingDistributionChart = ({ data }: TrainingDistributionChartProps) => {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            outerRadius={80}
+            fill="#8884d8"
+            dataKey="value"
+            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+          >
+            {data.map((_, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS[index % COLORS.length]}
+                stroke="none"
+              />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  const ToDoList = ({ items }: ToDoListProps) => {
+    const [completedItems, setCompletedItems] = useState<string[]>([]);
+
+    const toggleItem = (item: string) => {
+      if (completedItems.includes(item)) {
+        setCompletedItems(completedItems.filter((i) => i !== item));
+      } else {
+        setCompletedItems([...completedItems, item]);
+      }
+    };
+
+    return (
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-3 p-2 bg-white/5 rounded-lg"
+            role="button"
+            aria-label="Toggle task completion"
+            tabIndex={0}
+            onClick={() => toggleItem(item)}
+            onKeyDown={(e) => e.key === 'Enter' && toggleItem(item)}
+          >
+            <input
+              type="checkbox"
+              checked={completedItems.includes(item)}
+              readOnly
+              className="w-4 h-4"
+            />
+            <span className={`text-sm ${completedItems.includes(item) ? 'line-through text-gray-400' : 'text-gray-300'}`}>
+              {item}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const AchievementBadge = ({ title, description, progress, target }: AchievementBadgeProps) => {
+    const progressPercentage = (progress / target) * 100;
+
+    return (
+      <div className="bg-white/10 backdrop-blur-lg p-4 rounded-lg">
+        <div className="flex items-center gap-3">
+          <FaMedal className="text-yellow-500 text-xl" />
+          <h3 className="font-semibold">{title}</h3>
+        </div>
+        <p className="text-sm text-gray-400 mt-2">{description}</p>
+        <div className="relative pt-1">
+          <div className="flex mb-2 items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold inline-block text-primary">
+                {Math.round(progressPercentage)}%
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-semibold inline-block text-gray-400">
+                {progress}/{target}
+              </span>
+            </div>
+          </div>
+          <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-700">
+            <div
+              style={{ width: `${progressPercentage}%` }}
+              className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const PersonalizedInsights = ({ name, sport, position, healthMetrics }: { name: string; sport: string; position: string; healthMetrics: HealthMetrics }) => {
+    return (
+      <div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl">
+        <h2 className="text-xl font-semibold mb-4">Hi, {name}!</h2>
+        <p className="text-gray-300">
+          As a {position} in {sport}, here are some insights tailored for you:
+        </p>
+        <ul className="mt-4 space-y-2">
+          <li className="flex items-center gap-2">
+            <FaHeart className="text-red-500" />
+            Your heart rate is {healthMetrics.heartRate} BPM.
+          </li>
+          <li className="flex items-center gap-2">
+            <FaWater className="text-blue-500" />
+            Your hydration level is {healthMetrics.hydrationLevel}%.
+          </li>
+        </ul>
+      </div>
+    );
+  };
+
+  const renderAIRecommendations = () => {
+    if (isLoadingAI) {
+      return (
+        <div className="flex items-center justify-center gap-2">
+          <FaSpinner className="animate-spin" />
+          <p>Loading AI recommendations...</p>
+        </div>
+      );
+    }
+
+    // Transform training distribution data for the pie chart
+    const trainingDistributionData = Object.entries(
+      staticTrainingDistribution
+    ).map(([name, value]) => ({ name, value }));
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6"
+      >
+        {/* Personalized Insights */}
+        <PersonalizedInsights
+          name={athleteData.name}
+          sport={athleteData.sport}
+          position={athleteData.position}
+          healthMetrics={healthMetrics}
+        />
+
+        {/* Health Status */}
+        <RecommendationCard
+          title="Health Status"
+          icon={<FaHeart className="text-red-500 text-xl" />}
+          description={staticHealthStatus.overall}
+          details={
+            <div className="space-y-4">
+              <h4 className="font-semibold">Key Insights:</h4>
+              <ul className="space-y-2">
+                {staticHealthStatus.concerns.map((concern, index) => (
+                  <li key={index} className="flex items-center gap-2 text-sm">
+                    <FaExclamationTriangle className="text-red-400" />
+                    {concern}
+                  </li>
+                ))}
+                {staticHealthStatus.positives.map((positive, index) => (
+                  <li key={index} className="flex items-center gap-2 text-sm">
+                    <FaCheckCircle className="text-green-400" />
+                    {positive}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-gray-300">
+                <strong>Tip:</strong> Focus on improving hydration and sleep quality for better recovery.
+              </p>
+            </div>
+          }
+        />
+
+        {/* Training Recommendations */}
+        <RecommendationCard
+          title="Training Recommendations"
+          icon={<FaDumbbell className="text-primary text-xl" />}
+          description="Here's how you can optimize your training:"
+          details={
+            <div className="space-y-4">
+              <h4 className="font-semibold">Focus Areas:</h4>
+              <ToDoList items={staticTrainingRecommendations.focusAreas} />
+              <h4 className="font-semibold mt-4">Modifications:</h4>
+              <ul className="space-y-2">
+                {staticTrainingRecommendations.modifications.map((modification, index) => (
+                  <li key={index} className="flex items-center gap-2 text-sm">
+                    <FaSync className="text-blue-400" />
+                    {modification}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-gray-300">
+                <strong>Tip:</strong> Adjust your training intensity based on your recovery score.
+              </p>
+            </div>
+          }
+        />
+
+        {/* Training Distribution */}
+        <RecommendationCard
+          title="Training Focus"
+          icon={<FaChartLine className="text-primary text-xl" />}
+          description="Your recommended training distribution:"
+          details={
+            <div className="space-y-4">
+              <TrainingDistributionChart data={trainingDistributionData} />
+              <p className="text-sm text-gray-300">
+                <strong>Tip:</strong> Balance your training across strength, cardio, and recovery for optimal performance.
+              </p>
+            </div>
+          }
+        />
+
+        {/* Achievements */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AchievementBadge
+            title="Hydration Hero"
+            description="Drink 3 liters of water for 7 consecutive days."
+            progress={5}
+            target={7}
+          />
+          <AchievementBadge
+            title="Recovery Pro"
+            description="Achieve a recovery score of 90% for 5 days."
+            progress={3}
+            target={5}
+          />
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="space-y-8">
@@ -326,8 +750,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
             AI-powered workouts tailored for {athleteData.sport} - {athleteData.position}
           </p>
         </div>
-  
-        {/* Day Selection */}
+
         <div className="flex gap-2">
           {['today', 'tomorrow', 'day3'].map((day) => (
             <motion.button
@@ -346,14 +769,13 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           ))}
         </div>
       </div>
-  
-      {/* Health Metrics Grid */}
+
+      {/* Health Metrics */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
       >
-        {/* Heart Rate */}
         <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl">
           <div className="flex items-center gap-3 mb-2">
             <FaHeart className="text-red-500 text-xl" />
@@ -361,8 +783,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           </div>
           <p className="text-2xl font-bold">{healthMetrics.heartRate} BPM</p>
         </div>
-  
-        {/* Fatigue */}
+
         <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl">
           <div className="flex items-center gap-3 mb-2">
             <FaRunning className="text-blue-500 text-xl" />
@@ -370,8 +791,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           </div>
           <p className="text-2xl font-bold">{healthMetrics.fatigueLevel}%</p>
         </div>
-  
-        {/* Recovery */}
+
         <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl">
           <div className="flex items-center gap-3 mb-2">
             <FaYinYang className="text-green-500 text-xl" />
@@ -379,8 +799,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           </div>
           <p className="text-2xl font-bold">{healthMetrics.recoveryScore}%</p>
         </div>
-  
-        {/* Sleep */}
+
         <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl">
           <div className="flex items-center gap-3 mb-2">
             <FaBed className="text-purple-500 text-xl" />
@@ -388,8 +807,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           </div>
           <p className="text-2xl font-bold">{healthMetrics.sleepQuality}%</p>
         </div>
-  
-        {/* Hydration */}
+
         <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl">
           <div className="flex items-center gap-3 mb-2">
             <FaWater className="text-blue-500 text-xl" />
@@ -397,8 +815,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           </div>
           <p className="text-2xl font-bold">{healthMetrics.hydrationLevel}%</p>
         </div>
-  
-        {/* Stress */}
+
         <div className="bg-white/10 backdrop-blur-lg p-4 rounded-xl">
           <div className="flex items-center gap-3 mb-2">
             <FaBrain className="text-yellow-500 text-xl" />
@@ -407,7 +824,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           <p className="text-2xl font-bold">{healthMetrics.stressLevel}%</p>
         </div>
       </motion.div>
-  
+
       {/* Training Focus */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -418,7 +835,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           <FaChartLine className="text-primary text-2xl" />
           <h2 className="text-xl font-semibold">Training Focus</h2>
         </div>
-  
+
         <div className="flex flex-wrap gap-4">
           {['strength', 'endurance', 'speed', 'recovery'].map((goal) => (
             <motion.button
@@ -437,7 +854,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           ))}
         </div>
       </motion.div>
-  
+
       {/* Workout Plan */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -448,7 +865,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           <FaDumbbell className="text-primary text-2xl" />
           <h2 className="text-xl font-semibold">{selectedDay.charAt(0).toUpperCase() + selectedDay.slice(1)}'s Workout Plan</h2>
         </div>
-  
+
         <div className="space-y-6">
           {workout.map((section, sectionIndex) => (
             <motion.div
@@ -487,7 +904,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           ))}
         </div>
       </motion.div>
-  
+
       {/* Achievements */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -498,7 +915,7 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
           <FaMedal className="text-yellow-500 text-2xl" />
           <h2 className="text-xl font-semibold">Achievements</h2>
         </div>
-  
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {achievements.map((achievement, index) => (
             <motion.div
@@ -538,126 +955,9 @@ const TrainingPlans = ({ athleteData }: TrainingPlansProps) => {
         </div>
       </motion.div>
 
-{/* AI Recommendations */}
-{/* AI Recommendations */}
-<motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
->
-  <div className="flex items-center gap-3 mb-6">
-    <FaBrain className="text-primary text-2xl" />
-    <h2 className="text-xl font-semibold">AI Recommendations</h2>
-  </div>
-
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {/* Health Insights */}
-    <div className="space-y-4 border-2 border-red-500"> {/* Debugging border */}
-      {/* High Fatigue */}
-      {healthMetrics.fatigueLevel > 50 && ( // Adjusted threshold
-        <div className="flex items-center gap-3 bg-red-500/20 p-4 rounded-lg">
-          <FaExclamationTriangle className="text-red-500" />
-          <div>
-            <p className="text-sm font-semibold">High Fatigue Detected</p>
-            <p className="text-xs text-gray-400">
-              Your fatigue level is {healthMetrics.fatigueLevel}%. Consider a recovery day or light activity.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Low Hydration */}
-      {healthMetrics.hydrationLevel < 70 && ( // Adjusted threshold
-        <div className="flex items-center gap-3 bg-yellow-500/20 p-4 rounded-lg">
-          <FaWater className="text-yellow-500" />
-          <div>
-            <p className="text-sm font-semibold">Low Hydration Level</p>
-            <p className="text-xs text-gray-400">
-              Your hydration level is {healthMetrics.hydrationLevel}%. Drink at least 500ml of water immediately.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Poor Sleep */}
-      {healthMetrics.sleepQuality < 70 && (
-        <div className="flex items-center gap-3 bg-purple-500/20 p-4 rounded-lg">
-          <FaBed className="text-purple-500" />
-          <div>
-            <p className="text-sm font-semibold">Poor Sleep Quality</p>
-            <p className="text-xs text-gray-400">
-              Your sleep quality is {healthMetrics.sleepQuality}%. Aim for 7-9 hours of uninterrupted sleep.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* High Stress */}
-      {healthMetrics.stressLevel > 50 && ( // Adjusted threshold
-        <div className="flex items-center gap-3 bg-orange-500/20 p-4 rounded-lg">
-          <FaBrain className="text-orange-500" />
-          <div>
-            <p className="text-sm font-semibold">High Stress Level</p>
-            <p className="text-xs text-gray-400">
-              Your stress level is {healthMetrics.stressLevel}%. Practice mindfulness or deep breathing exercises.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Low Recovery */}
-      {healthMetrics.recoveryScore < 70 && ( // Adjusted threshold
-        <div className="flex items-center gap-3 bg-blue-500/20 p-4 rounded-lg">
-          <FaYinYang className="text-blue-500" />
-          <div>
-            <p className="text-sm font-semibold">Low Recovery Score</p>
-            <p className="text-xs text-gray-400">
-              Your recovery score is {healthMetrics.recoveryScore}%. Focus on rest and light activities today.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* AI Recommendations */}
+      {renderAIRecommendations()}
     </div>
-
-    {/* Training Tips */}
-    <div className="bg-white/5 p-4 rounded-lg">
-      <h3 className="font-semibold mb-4">Training Tips</h3>
-      <ul className="space-y-2">
-        <li className="flex items-center gap-2">
-          <FaStopwatch className="text-primary" />
-          <span className="text-sm">
-            Maintain 2-3 minute rest periods between sets for optimal recovery.
-          </span>
-        </li>
-        <li className="flex items-center gap-2">
-          <FaWater className="text-blue-500" />
-          <span className="text-sm">
-            Drink 500ml of water before and during your workout to stay hydrated.
-          </span>
-        </li>
-        <li className="flex items-center gap-2">
-          <FaHeartbeat className="text-red-500" />
-          <span className="text-sm">
-            Keep your heart rate in the target zone (140-160 BPM) for effective cardio.
-          </span>
-        </li>
-        <li className="flex items-center gap-2">
-          <FaDumbbell className="text-yellow-500" />
-          <span className="text-sm">
-            Focus on proper form to avoid injuries during strength training.
-          </span>
-        </li>
-        <li className="flex items-center gap-2">
-          <FaRunning className="text-green-500" />
-          <span className="text-sm">
-            Incorporate dynamic stretches before workouts to improve flexibility.
-          </span>
-        </li>
-      </ul>
-    </div>
-  </div>
-</motion.div>
-</div>
   );
 };
 

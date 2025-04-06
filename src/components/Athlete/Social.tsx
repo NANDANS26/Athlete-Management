@@ -58,7 +58,7 @@ const Social = ({ athleteData }: SocialProps) => {
         id: '2',
         author: {
           name: 'AI Coach',
-          avatar: 'https://i.pravatar.cc/150?img=2',
+          avatar: 'https://i.pravatar.cc/150?img=3',
           sport: 'Performance Analysis'
         },
         content: 'Based on recent training data, athletes who incorporate plyometric exercises show a 15% improvement in explosive power. Try adding box jumps to your routine! 📊🤖',

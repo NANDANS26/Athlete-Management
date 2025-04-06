@@ -187,7 +187,7 @@ const AthleteRegistration = () => {
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -200,7 +200,7 @@ const AthleteRegistration = () => {
                     value={formData.age || ''}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter your age"
                   />
                 </div>
@@ -211,7 +211,7 @@ const AthleteRegistration = () => {
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                   >
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
@@ -228,7 +228,7 @@ const AthleteRegistration = () => {
                     name="sport"
                     value={formData.sport}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                   >
                     <option value="">Select Sport</option>
                     {Object.keys(sportPositions).map(sport => (
@@ -243,7 +243,7 @@ const AthleteRegistration = () => {
                     name="position"
                     value={formData.position}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     disabled={!formData.sport}
                   >
                     <option value="">Select Position</option>
@@ -260,7 +260,7 @@ const AthleteRegistration = () => {
                     name="country"
                     value={formData.country}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter your country"
                   />
                 </div>
@@ -292,7 +292,7 @@ const AthleteRegistration = () => {
                     value={formData.height || ''}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter your height"
                   />
                 </div>
@@ -305,7 +305,7 @@ const AthleteRegistration = () => {
                     value={formData.weight || ''}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter your weight"
                   />
                 </div>
@@ -321,7 +321,7 @@ const AthleteRegistration = () => {
                     onChange={handleInputChange}
                     min="0"
                     max="100"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter body fat percentage"
                   />
                 </div>
@@ -339,7 +339,7 @@ const AthleteRegistration = () => {
                     onChange={handleInputChange}
                     min="0"
                     max="100"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter muscle mass percentage"
                   />
                 </div>
@@ -354,7 +354,7 @@ const AthleteRegistration = () => {
                     value={formData.restingHeartRate || ''}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter resting heart rate"
                   />
                 </div>
@@ -370,7 +370,7 @@ const AthleteRegistration = () => {
                     onChange={handleInputChange}
                     min="0"
                     max="24"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter average sleep hours"
                   />
                 </div>
@@ -400,7 +400,7 @@ const AthleteRegistration = () => {
                     name="pastInjuries"
                     value={formData.pastInjuries}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="List any past injuries"
                   />
                 </div>
@@ -413,7 +413,7 @@ const AthleteRegistration = () => {
                     name="medicalConditions"
                     value={formData.medicalConditions}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="List any medical conditions"
                   />
                 </div>
@@ -426,7 +426,7 @@ const AthleteRegistration = () => {
                     name="allergies"
                     value={formData.allergies}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="List any allergies"
                   />
                 </div>
@@ -439,7 +439,7 @@ const AthleteRegistration = () => {
                     name="trainingGoal"
                     value={formData.trainingGoal}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                   >
                     <option value="">Select Training Goal</option>
                     <option value="Speed & Agility">Speed & Agility</option>
@@ -458,7 +458,7 @@ const AthleteRegistration = () => {
                     name="trainingIntensity"
                     value={formData.trainingIntensity}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                   >
                     <option value="">Select Intensity Level</option>
                     <option value="Light">Light</option>
@@ -492,7 +492,7 @@ const AthleteRegistration = () => {
                     name="dietType"
                     value={formData.dietType}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                   >
                     <option value="">Select Diet Type</option>
                     <option value="High-Protein">High-Protein</option>
@@ -514,7 +514,7 @@ const AthleteRegistration = () => {
                     onChange={handleInputChange}
                     min="0"
                     step="0.1"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                     placeholder="Enter daily water intake"
                   />
                 </div>
@@ -527,7 +527,7 @@ const AthleteRegistration = () => {
                     name="eatingHabits"
                     value={formData.eatingHabits}
                     onChange={handleInputChange}
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                   >
                     <option value="">Select Eating Habits</option>
                     <option value="3 Full Meals">Eats 3 Full Meals</option>
@@ -566,7 +566,7 @@ const AthleteRegistration = () => {
                       name="supplementList"
                       value={formData.supplementList}
                       onChange={handleInputChange}
-                      className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                      className="w-full bg-gray-800/50 rounded-lg p-3 focus:ring-2 focus:ring-purple-400 text-white"
                       placeholder="List your supplements"
                     />
                   </div>

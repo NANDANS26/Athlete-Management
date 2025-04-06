@@ -136,7 +136,7 @@ const RecruiterRegistration = () => {
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full bg-white/5 rounded-lg p-3 pl-10 pr-10 focus:ring-2 focus:ring-primary 
+        className="w-full bg-gray-800/50 rounded-lg p-3 pl-10 pr-10 focus:ring-2 focus:ring-purple-400 text-white
           appearance-none cursor-pointer hover:bg-white/10 transition-colors"
       >
         <option value="">{placeholder}</option>
@@ -171,8 +171,7 @@ const RecruiterRegistration = () => {
                   value={formData.fullName}
                   onChange={handleInputChange}
                   placeholder="Full Name"
-                  className="w-full bg-white/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary
-                    hover:bg-white/10 transition-colors"
+                  className="w-full bg-gray-800/50 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-purple-400 text-white"
                 />
               </div>
 
@@ -184,8 +183,7 @@ const RecruiterRegistration = () => {
                   value={formData.organization}
                   onChange={handleInputChange}
                   placeholder="Organization/Club/Team Name (Optional)"
-                  className="w-full bg-white/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary
-                    hover:bg-white/10 transition-colors"
+                  className="w-full bg-gray-800/50 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-purple-400 text-white"
                 />
               </div>
 
@@ -202,6 +200,7 @@ const RecruiterRegistration = () => {
                   { value: 'University Representative', label: 'University Representative' },
                   { value: 'Independent', label: 'Independent Recruiter' }
                 ]}
+                
               />
             </div>
           </motion.div>
@@ -239,8 +238,7 @@ const RecruiterRegistration = () => {
                 onChange={handleInputChange}
                 placeholder="Years of Experience"
                 min="0"
-                className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary
-                  hover:bg-white/10 transition-colors"
+                className="w-full bg-gray-800/50 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-purple-400 text-white"
               />
 
               <CustomSelect
@@ -290,8 +288,7 @@ const RecruiterRegistration = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Email Address"
-                  className="w-full bg-white/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary
-                    hover:bg-white/10 transition-colors"
+                  className="w-full bg-gray-800/50 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-purple-400 text-white"
                 />
               </div>
 
@@ -303,8 +300,7 @@ const RecruiterRegistration = () => {
                   value={formData.phone}
                   onChange={handleInputChange}
                   placeholder="Phone Number"
-                  className="w-full bg-white/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary
-                    hover:bg-white/10 transition-colors"
+                  className="w-full bg-gray-800/50 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-purple-400 text-white"
                 />
               </div>
 
@@ -315,8 +311,7 @@ const RecruiterRegistration = () => {
                   value={formData.goals}
                   onChange={handleInputChange}
                   placeholder="What are your recruitment goals?"
-                  className="w-full bg-white/5 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-primary h-32
-                    hover:bg-white/10 transition-colors resize-none"
+                  className="w-full bg-gray-800/50 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-purple-400 text-white"
                 />
               </div>
             </div>

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaUtensils, FaPlus, FaTrash, FaRobot, FaAppleAlt, FaClock, FaBrain, FaCalendar } from 'react-icons/fa';
+import { FaUtensils, FaPlus, FaTrash, FaRobot, FaAppleAlt, FaClock, FaCalendar, FaSpinner } from 'react-icons/fa';
 import { collection, addDoc, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
+import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import type { AthleteData } from './AthleteDashboard';
+import { getNutritionSuggestions } from '../services/gemini';
 
 interface NutritionProps {
   athleteData: AthleteData;
@@ -196,14 +198,58 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPlanAndInsights, setShowPlanAndInsights] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string>('');
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [nutritionData, setNutritionData] = useState<{ name: string; value: number }[]>([]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setNewMeal(prev => ({
-      ...prev,
-      [name]: name === 'foodName' || name === 'mealType' || name === 'date' ? value : Number(value)
-    }));
+  const fetchAISuggestions = async () => {
+    setIsLoadingSuggestions(true);
+    try {
+      const suggestions = await getNutritionSuggestions(
+        athleteData.sport,
+        athleteData.position,
+        meals,
+        athleteData.trainingGoal
+      );
+
+      // Parse and format the AI output
+      const parsedSuggestions = parseAISuggestions(suggestions);
+      setAiSuggestions(parsedSuggestions);
+
+      // Extract nutritional data for the pie chart
+      const macros = {
+        protein: meals.reduce((sum, meal) => sum + meal.protein, 0),
+        carbs: meals.reduce((sum, meal) => sum + meal.carbs, 0),
+        fats: meals.reduce((sum, meal) => sum + meal.fats, 0),
+      };
+
+      setNutritionData([
+        { name: 'Protein', value: macros.protein },
+        { name: 'Carbs', value: macros.carbs },
+        { name: 'Fats', value: macros.fats },
+      ]);
+    } catch (error) {
+      console.error('Error fetching AI suggestions:', error);
+      setError('Failed to fetch AI suggestions');
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
   };
+
+  const parseAISuggestions = (suggestions: string): string => {
+    // Example parsing logic (adjust based on your AI output format)
+    const lines = suggestions.split('\n').filter(line => line.trim() !== '');
+    const keyPoints = lines
+      .map(line => line.replace(/\*\*/g, '').replace(/- /g, '• ').trim())
+      .slice(0, 10); // Limit to 10 points
+    return keyPoints.join('\n');
+  };
+
+  useEffect(() => {
+    if (meals.length > 0) {
+      fetchAISuggestions();
+    }
+  }, [meals]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,7 +268,6 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
 
       await addDoc(collection(db, 'meals'), mealData);
 
-      // Fetch the updated meals list
       const mealsQuery = query(
         collection(db, 'meals'),
         where('userId', '==', userId),
@@ -230,18 +275,13 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
       );
 
       const querySnapshot = await getDocs(mealsQuery);
-      const mealDataFetched = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          timestamp: data.timestamp.toDate()
-        } as MealEntry;
-      });
+      const mealDataFetched = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp.toDate()
+      })) as MealEntry[];
 
       setMeals(mealDataFetched.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
-
-      // Reset the form
       setNewMeal({
         foodName: '',
         calories: 0,
@@ -252,8 +292,8 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
         mealType: ''
       });
 
-      // Show the entered data and AI plan/insights
       setShowPlanAndInsights(true);
+      await fetchAISuggestions();
     } catch (error) {
       console.error('Error adding meal:', error);
       setError('Failed to add meal');
@@ -266,7 +306,6 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
     try {
       await deleteDoc(doc(db, 'meals', mealId));
 
-      // Fetch the updated meals list
       const userId = auth.currentUser?.uid;
       if (!userId) return;
 
@@ -292,6 +331,8 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
       setError('Failed to delete meal');
     }
   };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28']; // Colors for the pie chart
 
   return (
     <div className="space-y-8">
@@ -328,30 +369,25 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Food Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Food Name *</label>
                   <input
                     type="text"
                     name="foodName"
                     value={newMeal.foodName}
-                    onChange={handleInputChange}
+                    onChange={(e) => setNewMeal({ ...newMeal, foodName: e.target.value })}
+                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     required
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
-                    placeholder="Enter food name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Meal Type
-                  </label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Meal Type *</label>
                   <select
                     name="mealType"
                     value={newMeal.mealType}
-                    onChange={handleInputChange}
+                    onChange={(e) => setNewMeal({ ...newMeal, mealType: e.target.value })}
+                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     required
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                   >
                     <option value="">Select Meal Type</option>
                     <option value="breakfast">Breakfast</option>
@@ -360,98 +396,79 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
                     <option value="snack">Snack</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Calories
-                  </label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Date *</label>
+                  <input
+                    type="date"
+                    name="date"
+                    value={newMeal.date}
+                    onChange={(e) => setNewMeal({ ...newMeal, date: e.target.value })}
+                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Calories *</label>
                   <input
                     type="number"
                     name="calories"
-                    value={newMeal.calories}
-                    onChange={handleInputChange}
+                    value={newMeal.calories || ''}
+                    onChange={(e) => setNewMeal({ ...newMeal, calories: Number(e.target.value) })}
+                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     required
-                    min="0"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
-                    placeholder="kcal"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Protein (g)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Protein (g) *</label>
                   <input
                     type="number"
                     name="protein"
-                    value={newMeal.protein}
-                    onChange={handleInputChange}
+                    value={newMeal.protein || ''}
+                    onChange={(e) => setNewMeal({ ...newMeal, protein: Number(e.target.value) })}
+                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     required
-                    min="0"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
-                    placeholder="g"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Carbs (g)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Carbs (g) *</label>
                   <input
                     type="number"
                     name="carbs"
-                    value={newMeal.carbs}
-                    onChange={handleInputChange}
+                    value={newMeal.carbs || ''}
+                    onChange={(e) => setNewMeal({ ...newMeal, carbs: Number(e.target.value) })}
+                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     required
-                    min="0"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
-                    placeholder="g"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Fats (g)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Fats (g) *</label>
                   <input
                     type="number"
                     name="fats"
-                    value={newMeal.fats}
-                    onChange={handleInputChange}
+                    value={newMeal.fats || ''}
+                    onChange={(e) => setNewMeal({ ...newMeal, fats: Number(e.target.value) })}
+                    className="w-full bg-white/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
                     required
-                    min="0"
-                    className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
-                    placeholder="g"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  name="date"
-                  value={newMeal.date}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full bg-grey/5 rounded-lg p-3 focus:ring-2 focus:ring-primary"
-                />
+              <div className="flex justify-end">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="submit"
+                  disabled={loading}
+                  className="bg-primary hover:bg-secondary text-white px-6 py-2 rounded-lg transition-colors"
+                >
+                  {loading ? 'Adding...' : 'Add Meal'}
+                </motion.button>
               </div>
-
-              <motion.button
-                type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                disabled={loading}
-                className={`w-full bg-primary hover:bg-secondary text-white p-3 rounded-lg 
-                  transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {loading ? 'Adding...' : 'Add Meal'}
-              </motion.button>
             </form>
           </motion.div>
         )}
@@ -520,68 +537,68 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
 
       {/* Weekly Nutrition Plan */}
       {showPlanAndInsights && (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-white/10 p-8 rounded-xl"
-  >
-    <div className="flex items-center gap-3 mb-8">
-      <FaCalendar className="text-primary text-3xl" />
-      <h2 className="text-2xl font-bold">Weekly Nutrition Plan</h2>
-    </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/10 p-8 rounded-xl"
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <FaCalendar className="text-primary text-3xl" />
+            <h2 className="text-2xl font-bold">Weekly Nutrition Plan</h2>
+          </div>
 
-    <div className="space-y-8">
-      {Object.entries(weeklyMealPlan).map(([day, plan]) => (
-        <div key={day} className="bg-white/5 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-          <h3 className="font-bold text-xl mb-6 text-primary border-b border-white/10 pb-4">{day}</h3>
+          <div className="space-y-8">
+            {Object.entries(weeklyMealPlan).map(([day, plan]) => (
+              <div key={day} className="bg-white/5 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                <h3 className="font-bold text-xl mb-6 text-primary border-b border-white/10 pb-4">{day}</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {Object.entries(plan).map(([mealType, meal]) => (
-              <div key={mealType} className="bg-white/10 p-4 rounded-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  {mealType === 'breakfast' && <FaAppleAlt className="text-yellow-500 text-2xl" />}
-                  {mealType === 'lunch' && <FaUtensils className="text-green-500 text-2xl" />}
-                  {mealType === 'dinner' && <FaClock className="text-blue-500 text-2xl" />}
-                  <h4 className="text-lg font-semibold text-gray-200">
-                    {mealType.charAt(0).toUpperCase() + mealType.slice(1)} • {meal.time}
-                  </h4>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {Object.entries(plan).map(([mealType, meal]) => (
+                    <div key={mealType} className="bg-white/10 p-4 rounded-lg">
+                      <div className="flex items-center gap-3 mb-4">
+                        {mealType === 'breakfast' && <FaAppleAlt className="text-yellow-500 text-2xl" />}
+                        {mealType === 'lunch' && <FaUtensils className="text-green-500 text-2xl" />}
+                        {mealType === 'dinner' && <FaClock className="text-blue-500 text-2xl" />}
+                        <h4 className="text-lg font-semibold text-gray-200">
+                          {mealType.charAt(0).toUpperCase() + mealType.slice(1)} • {meal.time}
+                        </h4>
+                      </div>
 
-                <ul className="space-y-2 mb-4">
-                  {meal.suggestions.map((suggestion: string, index: number) => (
-                    <li key={index} className="flex items-center gap-2 text-sm text-gray-300">
-                      <span className="text-primary">•</span>
-                      {suggestion}
-                    </li>
+                      <ul className="space-y-2 mb-4">
+                        {meal.suggestions.map((suggestion: string, index: number) => (
+                          <li key={index} className="flex items-center gap-2 text-sm text-gray-300">
+                            <span className="text-primary">•</span>
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="text-sm text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Calories:</span>
+                          <span>{meal.macros.calories} kcal</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Protein:</span>
+                          <span>{meal.macros.protein}g</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Carbs:</span>
+                          <span>{meal.macros.carbs}g</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Fats:</span>
+                          <span>{meal.macros.fats}g</span>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </ul>
-
-                <div className="text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Calories:</span>
-                    <span>{meal.macros.calories} kcal</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Protein:</span>
-                    <span>{meal.macros.protein}g</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Carbs:</span>
-                    <span>{meal.macros.carbs}g</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Fats:</span>
-                    <span>{meal.macros.fats}g</span>
-                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      ))}
-    </div>
-  </motion.div>
-)}
+        </motion.div>
+      )}
 
       {/* AI Nutrition Insights */}
       {showPlanAndInsights && (
@@ -595,57 +612,70 @@ const Nutrition = ({ athleteData }: NutritionProps) => {
             <h2 className="text-xl font-semibold">AI Nutrition Insights</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                title: 'Sport-Specific Recommendations',
-                insights: [
-                  `As a ${athleteData.sport} player, focus on high-quality proteins for muscle recovery.`,
-                  'Maintain balanced carbohydrate intake for sustained energy.',
-                  'Include anti-inflammatory foods to support joint health.'
-                ]
-              },
-              {
-                title: 'Timing Optimization',
-                insights: [
-                  'Consume protein within 30 minutes post-training.',
-                  'Space meals 3-4 hours apart for optimal digestion.',
-                  'Hydrate with 500ml water 2 hours before training.'
-                ]
-              },
-              {
-                title: 'Performance Boosters',
-                insights: [
-                  'Include omega-3 rich foods for joint health.',
-                  'Add beetroot juice for improved endurance.',
-                  'Consider creatine supplementation for power output.'
-                ]
-              }
-            ].map((section, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white/5 p-4 rounded-lg"
-              >
-                <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                  {index === 0 && <FaAppleAlt className="text-green-500" />}
-                  {index === 1 && <FaClock className="text-blue-500" />}
-                  {index === 2 && <FaBrain className="text-purple-500" />}
-                  {section.title}
-                </h3>
-                <ul className="space-y-2">
-                  {section.insights.map((insight, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
+          {isLoadingSuggestions ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <FaSpinner className="text-4xl text-primary animate-spin mb-4" />
+              <p className="text-gray-400">Analyzing your nutrition data...</p>
+            </div>
+          ) : aiSuggestions ? (
+            <div className="prose prose-invert max-w-none">
+              {aiSuggestions.split('\n').map((line, index) => {
+                if (line.startsWith('•')) {
+                  return (
+                    <div key={index} className="flex items-start gap-2 mb-2">
                       <span className="text-primary mt-1">•</span>
-                      {insight}
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            ))}
+                      <p className="m-0 text-gray-300">{line.substring(1).trim()}</p>
+                    </div>
+                  );
+                }
+                if (line.trim().length === 0) {
+                  return <br key={index} />;
+                }
+                return (
+                  <p key={index} className="mb-4 text-gray-300">
+                    {line}
+                  </p>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-center">
+              Add your meals to receive personalized AI nutrition insights.
+            </p>
+          )}
+
+          {/* Pie Chart for Nutritional Data */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Nutritional Breakdown</h3>
+            <PieChart width={400} height={300}>
+              <Pie
+                data={nutritionData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              >
+                {nutritionData.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
           </div>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={fetchAISuggestions} disabled={isLoadingSuggestions || meals.length === 0}
+            className="mt-4 flex items-center justify-center gap-2 bg-primary hover:bg-secondary text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FaRobot />
+            Refresh Insights
+          </motion.button>
         </motion.div>
       )}
     </div>

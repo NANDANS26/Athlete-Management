@@ -86,7 +86,7 @@ const AthleteDashboard = () => {
       case 'overview':
         return <Overview athleteData={athleteData} />;
       case 'wearable':
-        return <WearableSync athleteData={athleteData} />;
+        return <WearableSync />;
       case 'nutrition':
         return <Nutrition athleteData={athleteData} />;
       case 'training':

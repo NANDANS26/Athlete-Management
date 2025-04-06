@@ -228,9 +228,9 @@ const Login = () => {
 
         <p className="mt-8 text-center text-blue-300">
           New to our platform?{' '}
-          <a href="/SignUp" className="text-blue-400 hover:text-blue-200 transition-colors">
+          <button onClick={() => navigate('/signup')} className="text-blue-400 hover:text-blue-200 transition-colors">
             Sign up here
-          </a>
+          </button>
         </p>
       </motion.div>
     </div>

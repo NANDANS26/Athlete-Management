@@ -1,9 +1,12 @@
 import { FaTwitter, FaLinkedin, FaInstagram, FaYoutube, FaArrowUp } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+
 
 const Footer = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,9 +58,13 @@ const Footer = () => {
         <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
           <p>&copy; 2025 Athlete Management Solution. All rights reserved.</p>
           <p className="mt-2">
-            <a href="#" className="hover:text-primary">Terms of Service</a>
-            {' '}&bull;{' '}
-            <a href="#" className="hover:text-primary">Privacy Policy</a>
+            <button onClick={() => navigate('/terms-and-conditions')} className="hover:text-primary">
+            terms-and-conditions     
+            </button>
+
+            <button onClick={() => navigate('/privacy-policy')} className="hover:text-primary">
+            Privacy Policy
+            </button>
           </p>
         </div>
       </div>

@@ -205,7 +205,7 @@ const NotificationsCenter = () => {
           <select
             value={sport}
             onChange={(e) => setSport(e.target.value)}
-            className="bg-white/10 text-white p-2 rounded-lg focus:ring-2 focus:ring-primary"
+            className=" bg-gray-800/50 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-purple-400 text-white"
           >
             <option value="Football">Football</option>
             <option value="Basketball">Basketball</option>

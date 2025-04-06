@@ -117,7 +117,7 @@ const ContractManagement = () => {
           <select
             value={selectedSport}
             onChange={(e) => setSelectedSport(e.target.value)}
-            className="w-full bg-white/10 rounded-lg px-4 py-3 mb-6"
+            className="w-full bg-gray-800/50 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-purple-400 text-white"
           >
             <option value="">Select Sport</option>
             {Object.keys(athletesData).map((sport) => (

@@ -1,13 +1,40 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  FaBolt, FaHeartbeat,  FaTrophy, FaBed, FaChartLine, 
-  FaDumbbell, FaWeight, FaRulerVertical, FaPercentage, FaFire,
-  FaBrain, FaChartBar, FaArrowUp,
-  FaArrowDown, FaMinus
-} from 'react-icons/fa';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar } from 'recharts';
-import type { AthleteData } from './AthleteDashboard';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  FaBolt,
+  FaHeartbeat,
+  FaTrophy,
+  FaBed,
+  FaChartLine,
+  FaDumbbell,
+  FaWeight,
+  FaRulerVertical,
+  FaPercentage,
+  FaFire,
+  FaBrain,
+  FaChartBar,
+  FaArrowUp,
+  FaArrowDown,
+  FaMinus,
+} from "react-icons/fa";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  BarChart,
+  Bar,
+} from "recharts";
+import type { AthleteData } from "./AthleteDashboard";
+import { getPerformancePredictions } from "../services/gemini";
 
 interface PerformanceProps {
   athleteData: AthleteData;
@@ -27,7 +54,7 @@ interface Achievement {
   description: string;
   date: Date;
   icon: JSX.Element;
-  type: 'personal' | 'competition' | 'milestone';
+  type: "personal" | "competition" | "milestone";
 }
 
 interface PerformanceMetric {
@@ -40,18 +67,77 @@ interface PerformanceMetric {
 }
 
 const Performance = ({ athleteData }: PerformanceProps) => {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'week' | 'month' | 'year'>('month');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<"week" | "month" | "year">("month");
   const [bodyMetrics] = useState<BodyMetrics>({
     weight: 75,
     height: 180,
     bodyFat: 15,
     muscleMass: 45,
-    bmi: 23.1
+    bmi: 23.1,
   });
   const [bodyMetricsHistory, setBodyMetricsHistory] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [performanceData, setPerformanceData] = useState<PerformanceMetric[]>([]);
-  const [recentImprovements, setRecentImprovements] = useState<any[]>([]);
+  const [recentImprovements, setRecentImprovements] = useState<
+    { metric: string; change: string; trend: string; period: string }[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch dynamic performance predictions every 30 seconds
+  useEffect(() => {
+    const fetchPerformanceData = async () => {
+      setIsLoading(true);
+      try {
+        const predictions = await getPerformancePredictions();
+        console.log("API Response:", predictions);
+
+        setRecentImprovements([
+          {
+            metric: "Sprint Speed",
+            change: predictions.sprintSpeed,
+            trend: "up",
+            period: "30 days",
+          },
+          {
+            metric: "Strength",
+            change: predictions.strength,
+            trend: "up",
+            period: "30 days",
+          },
+          {
+            metric: "Endurance",
+            change: predictions.endurance,
+            trend: "up",
+            period: "30 days",
+          },
+          {
+            metric: "Body Fat",
+            change: predictions.bodyFat,
+            trend: "down",
+            period: "30 days",
+          },
+        ]);
+      } catch (error) {
+        console.error("Failed to fetch performance predictions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Fetch data immediately
+    fetchPerformanceData();
+
+    // Fetch data every 30 seconds
+    const interval = setInterval(fetchPerformanceData, 30000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
+  }, []);
+
+  // Log state changes
+  useEffect(() => {
+    console.log("Recent Improvements Updated:", recentImprovements);
+  }, [recentImprovements]);
 
   // Generate sample performance data
   useEffect(() => {
@@ -63,11 +149,11 @@ const Performance = ({ athleteData }: PerformanceProps) => {
         date.setDate(date.getDate() - i);
         data.push({
           date: date.toLocaleDateString(),
-          speed: 70 + Math.random() * 20 + i/2,
-          strength: 65 + Math.random() * 25 + i/3,
-          endurance: 75 + Math.random() * 15 + i/4,
-          agility: 80 + Math.random() * 10 + i/2,
-          technique: 85 + Math.random() * 10 + i/3
+          speed: 70 + Math.random() * 20 + i / 2,
+          strength: 65 + Math.random() * 25 + i / 3,
+          endurance: 75 + Math.random() * 15 + i / 4,
+          agility: 80 + Math.random() * 10 + i / 2,
+          technique: 85 + Math.random() * 10 + i / 3,
         });
       }
       setPerformanceData(data);
@@ -79,9 +165,9 @@ const Performance = ({ athleteData }: PerformanceProps) => {
         date.setMonth(date.getMonth() - i);
         metricsHistory.push({
           date: date.toLocaleDateString(),
-          weight: 75 - i/4 + Math.random(),
-          bodyFat: 15 - i/6 + Math.random(),
-          muscleMass: 45 + i/8 + Math.random()
+          weight: 75 - i / 4 + Math.random(),
+          bodyFat: 15 - i / 6 + Math.random(),
+          muscleMass: 45 + i / 8 + Math.random(),
         });
       }
       setBodyMetricsHistory(metricsHistory);
@@ -89,57 +175,29 @@ const Performance = ({ athleteData }: PerformanceProps) => {
       // Sample achievements
       setAchievements([
         {
-          id: '1',
-          title: 'Speed Milestone',
-          description: 'Achieved top sprint speed of 32 km/h',
+          id: "1",
+          title: "Speed Milestone",
+          description: "Achieved top sprint speed of 32 km/h",
           date: new Date(),
           icon: <FaBolt className="text-yellow-500" />,
-          type: 'personal'
+          type: "personal",
         },
         {
-          id: '2',
-          title: 'Strength Record',
-          description: 'New personal best in bench press: 100kg',
+          id: "2",
+          title: "Strength Record",
+          description: "New personal best in bench press: 100kg",
           date: new Date(Date.now() - 86400000),
           icon: <FaDumbbell className="text-blue-500" />,
-          type: 'personal'
+          type: "personal",
         },
         {
-          id: '3',
-          title: 'Tournament Victory',
-          description: 'First place in regional championship',
+          id: "3",
+          title: "Tournament Victory",
+          description: "First place in regional championship",
           date: new Date(Date.now() - 172800000),
           icon: <FaTrophy className="text-yellow-500" />,
-          type: 'competition'
-        }
-      ]);
-
-      // Recent improvements
-      setRecentImprovements([
-        {
-          metric: 'Sprint Speed',
-          change: '+8%',
-          trend: 'up',
-          period: '30 days'
+          type: "competition",
         },
-        {
-          metric: 'Strength',
-          change: '+12%',
-          trend: 'up',
-          period: '30 days'
-        },
-        {
-          metric: 'Endurance',
-          change: '+5%',
-          trend: 'up',
-          period: '30 days'
-        },
-        {
-          metric: 'Body Fat',
-          change: '-2%',
-          trend: 'down',
-          period: '30 days'
-        }
       ]);
     };
 
@@ -148,9 +206,9 @@ const Performance = ({ athleteData }: PerformanceProps) => {
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'up':
+      case "up":
         return <FaArrowUp className="text-green-500" />;
-      case 'down':
+      case "down":
         return <FaArrowDown className="text-red-500" />;
       default:
         return <FaMinus className="text-yellow-500" />;
@@ -171,22 +229,42 @@ const Performance = ({ athleteData }: PerformanceProps) => {
 
       {/* Quick Stats & Recent Improvements */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {recentImprovements.map((improvement, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white/10 p-6 rounded-xl"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">{improvement.metric}</h3>
-              {getTrendIcon(improvement.trend)}
-            </div>
-            <div className="text-2xl font-bold mb-1">{improvement.change}</div>
-            <p className="text-sm text-gray-400">Last {improvement.period}</p>
-          </motion.div>
-        ))}
+        {isLoading ? (
+          // Show loading skeleton or spinner
+          Array.from({ length: 4 }).map((_, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white/10 p-6 rounded-xl"
+            >
+              <div className="animate-pulse">
+                <div className="h-6 w-24 bg-gray-700 rounded mb-2"></div>
+                <div className="h-8 w-16 bg-gray-700 rounded mb-1"></div>
+                <div className="h-4 w-32 bg-gray-700 rounded"></div>
+              </div>
+            </motion.div>
+          ))
+        ) : (
+          // Show actual data
+          recentImprovements.map((improvement, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white/10 p-6 rounded-xl"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold">{improvement.metric}</h3>
+                {getTrendIcon(improvement.trend)}
+              </div>
+              <div className="text-2xl font-bold mb-1">{improvement.change}</div>
+              <p className="text-sm text-gray-400">Last {improvement.period}</p>
+            </motion.div>
+          ))
+        )}
       </div>
 
       {/* Performance Trends */}
@@ -201,14 +279,14 @@ const Performance = ({ athleteData }: PerformanceProps) => {
             <h2 className="text-xl font-semibold">Performance Trends</h2>
           </div>
           <div className="flex gap-2">
-            {['month'].map((timeframe) => (
+            {["month"].map((timeframe) => (
               <button
                 key={timeframe}
                 onClick={() => setSelectedTimeframe(timeframe as any)}
                 className={`px-4 py-2 rounded-lg capitalize ${
                   selectedTimeframe === timeframe
-                    ? 'bg-primary text-white'
-                    : 'bg-white/5 hover:bg-white/10'
+                    ? "bg-primary text-white"
+                    : "bg-white/5 hover:bg-white/10"
                 }`}
               >
                 {timeframe}
@@ -225,8 +303,8 @@ const Performance = ({ athleteData }: PerformanceProps) => {
               <YAxis stroke="#888" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                  border: '1px solid #666'
+                  backgroundColor: "rgba(0, 0, 0, 0.8)",
+                  border: "1px solid #666",
                 }}
               />
               <Line type="monotone" dataKey="speed" name="Speed" stroke="#646cff" strokeWidth={2} />
@@ -289,8 +367,8 @@ const Performance = ({ athleteData }: PerformanceProps) => {
                 <YAxis stroke="#888" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid #666'
+                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    border: "1px solid #666",
                   }}
                 />
                 <Bar dataKey="weight" name="Weight" fill="#646cff" />
@@ -315,12 +393,12 @@ const Performance = ({ athleteData }: PerformanceProps) => {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                { subject: 'Speed', A: 85 },
-                { subject: 'Strength', A: 80 },
-                { subject: 'Endurance', A: 75 },
-                { subject: 'Agility', A: 90 },
-                { subject: 'Technique', A: 85 },
-                { subject: 'Mental', A: 88 }
+                { subject: "Speed", A: 85 },
+                { subject: "Strength", A: 80 },
+                { subject: "Endurance", A: 75 },
+                { subject: "Agility", A: 90 },
+                { subject: "Technique", A: 85 },
+                { subject: "Mental", A: 88 },
               ]}>
                 <PolarGrid stroke="#444" />
                 <PolarAngleAxis dataKey="subject" stroke="#888" />
@@ -386,7 +464,7 @@ const Performance = ({ athleteData }: PerformanceProps) => {
                     <span className="text-primary">850 AU</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div className="bg-primary rounded-full h-2" style={{ width: '75%' }} />
+                    <div className="bg-primary rounded-full h-2" style={{ width: "75%" }} />
                   </div>
                 </div>
                 <div className="text-right">
@@ -405,7 +483,7 @@ const Performance = ({ athleteData }: PerformanceProps) => {
                     <span className="text-green-500">85%</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div className="bg-green-500 rounded-full h-2" style={{ width: '85%' }} />
+                    <div className="bg-green-500 rounded-full h-2" style={{ width: "85%" }} />
                   </div>
                 </div>
                 <div className="text-right">

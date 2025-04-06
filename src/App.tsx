@@ -5,6 +5,8 @@ import HowItWorks from './components/home/HowItWorks';
 import Testimonials from './components/home/Testimonials';
 import CallToAction from './components/home/CallToAction';
 import Footer from './components/home/Footer';
+import PrivacyPolicy from './components/home/PrivacyPolicy';
+import TermsAndConditions from './components/home/terms-and-conditions';
 import Login from './components/auth/Login';
 import SignUp from './components/auth/SignUp';
 import UserSelection from './components/home/UserSelection';
@@ -17,6 +19,8 @@ import AthleteOnboarding from './components/Registration/AthleteOnboarding';
 import ThankYou from './components/Registration/ThankYou';
 import AthleteDashboard from './components/Athlete/AthleteDashboard';
 import RecruiterDashboard from './components/Recruiter/RecruiterDashboard';
+import GoogleFitCallback from './components/auth/GoogleFitCallback';
+import StravaCallback from './components/auth/StravaCallback';
 import './App.css';
 
 function App() {
@@ -36,6 +40,10 @@ function App() {
           <Route path="/welcome-recruiter" element={<WelcomeRecruiter />} />
           <Route path="/dashboard/athlete" element={<AthleteDashboard />} />
           <Route path="/dashboard/recruiter" element={<RecruiterDashboard />} />
+          <Route path="/google-fit-callback" element={<GoogleFitCallback />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/strava-callback" element={<StravaCallback />} />
           <Route path="/" element={
             <>
               <HeroSection />

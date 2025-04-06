@@ -327,9 +327,9 @@ const SignUp = () => {
         {/* Login Link */}
         <p className="mt-8 text-center text-blue-300">
           Already have an account?{' '}
-          <a href="/login" className="text-blue-400 hover:text-blue-200">
+          <button onClick={() => navigate('/login')} className="text-blue-400 hover:text-blue-200 transition-colors">
             Log in here
-          </a>
+          </button>
         </p>
       </motion.div>
     </div>

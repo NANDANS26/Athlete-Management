@@ -1,12 +1,16 @@
-import { useState, useEffect, JSX } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaApple, FaGoogle, FaHeart, FaBed, FaTint, FaRunning, FaBrain, FaPlus, FaSync, FaBolt, FaTimes, FaStopwatch, FaHeartbeat, FaWalking, FaFire } from 'react-icons/fa';
+import {
+  FaGoogle, FaHeart, FaBed, FaTint, FaRunning, FaBrain, FaPlus,
+  FaSync, FaBolt, FaTimes, FaHeartbeat, FaWalking, FaFire,
+  FaExclamationTriangle, FaSpinner
+} from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import type { AthleteData } from './AthleteDashboard';
-
-interface WearableSyncProps {
-  athleteData: AthleteData;
-}
+import { useWearableStore, syncHealthMetricsToFirebase, subscribeToHealthMetrics, generateRandomMetrics } from '../services/wearableStore';
+import { fetchGoogleFitData } from '../services/googleFit';
+import { auth, db } from '../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import type { HealthMetrics } from '../types';
 
 interface Device {
   id: string;
@@ -15,140 +19,294 @@ interface Device {
   connected: boolean;
   lastSync?: Date;
   batteryLevel?: number;
+  type: 'google_fit' | 'strava' | 'bluetooth';
 }
 
-interface HealthMetric {
-  timestamp: string;
-  heartRate: number;
-  steps: number;
-  calories: number;
-  sleep: number;
-  hydration: number;
-  stress: number;
-}
-
-interface Exercise {
-  id: string;
-  type: string;
-  duration: number;
-  calories: number;
-  heartRate: number;
-  timestamp: Date;
-}
-
-const WearableSync = ({ }: WearableSyncProps) => {
+const WearableSync = () => {
   const [devices, setDevices] = useState<Device[]>([
-    { id: 'apple', name: 'Apple Watch', icon: <FaApple />, connected: false },
-    { id: 'google', name: 'Google Fit', icon: <FaGoogle />, connected: false },
-    { id: 'fitbit', name: 'Fitbit', icon: <FaBolt />, connected: false },
-    { id: 'garmin', name: 'Garmin', icon: <FaBolt />, connected: false },
-    { id: 'xiaomi', name: 'Mi Band', icon: <FaBolt />, connected: false },
-    { id: 'whoop', name: 'WHOOP', icon: <FaBolt />, connected: false }
+    {
+      id: 'google_fit',
+      name: 'Google Fit',
+      icon: <FaGoogle />,
+      connected: false,
+      type: 'google_fit'
+    },
+    {
+      id: 'strava',
+      name: 'Strava',
+      icon: <FaBolt />,
+      connected: false,
+      type: 'strava'
+    },
+    {
+      id: 'bluetooth',
+      name: 'Bluetooth Device',
+      icon: <FaHeart />,
+      connected: false,
+      type: 'bluetooth'
+    }
   ]);
 
-  const [healthData, setHealthData] = useState<HealthMetric[]>([]);
+  const [healthData, setHealthData] = useState<HealthMetrics[]>([]);
   const [selectedMetric, setSelectedMetric] = useState('heartRate');
   const [syncing, setSyncing] = useState(false);
-  const [alerts, setAlerts] = useState<string[]>([]);
-  const [recentExercises, setRecentExercises] = useState<Exercise[]>([]);
   const [isBluetoothConnecting, setIsBluetoothConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState('');
+  const [authWindow, setAuthWindow] = useState<Window | null>(null);
+  const [dataFetchInterval, setDataFetchInterval] = useState<NodeJS.Timeout | null>(null);
 
-  // Simulate real-time health data updates
+  const {
+    connectedDevice,
+    setConnectedDevice,
+    updateHealthMetrics,
+    clearHealthMetrics
+  } = useWearableStore();
+
+  // Store health metrics in Firebase
+  const storeHealthMetricsInFirebase = async (metrics: HealthMetrics) => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+  
+    try {
+      await setDoc(doc(db, 'users', userId, 'healthMetrics', 'latest'), {
+        ...metrics,
+        timestamp: new Date().toISOString(),
+        userId
+      });
+      console.log('Health metrics stored successfully');
+    } catch (error: unknown) {
+      // Type-safe error handling
+      if (error instanceof Error) {
+        console.error('Firebase error:', {
+          message: error.message,
+          code: (error as { code?: string }).code,
+          details: (error as { details?: string }).details
+        });
+      } else {
+        console.error('Unknown error occurred:', error);
+      }
+    }
+  };
+
+  // Initialize devices based on stored connection state
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      const newMetric: HealthMetric = {
-        timestamp: now.toLocaleTimeString(),
-        heartRate: 65 + Math.random() * 20,
-        steps: 8000 + Math.random() * 1000,
-        calories: 1800 + Math.random() * 200,
-        sleep: 7.5 + Math.random(),
-        hydration: 65 + Math.random() * 10,
-        stress: 30 + Math.random() * 20
+    if (connectedDevice) {
+      setDevices(prev =>
+        prev.map(device =>
+          device.type === connectedDevice
+            ? { ...device, connected: true, lastSync: new Date() }
+            : device
+        )
+      );
+    }
+  }, [connectedDevice]);
+
+  // Subscribe to Firebase real-time updates
+  useEffect(() => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+  
+    const unsubscribe = subscribeToHealthMetrics(userId, (metrics) => {
+      updateHealthMetrics(metrics);
+      setHealthData(prev => [...prev, metrics].slice(-30));
+      
+      // Add this call:
+      storeHealthMetricsInFirebase(metrics);
+    });
+  
+    return () => unsubscribe();
+  }, [updateHealthMetrics]);
+
+  // Fetch and update Google Fit data
+  const fetchAndUpdateGoogleFitData = useCallback(async () => {
+    try {
+      const data = await fetchGoogleFitData();
+      const userId = auth.currentUser?.uid;
+      if (!userId) return;
+  
+      const newMetrics: HealthMetrics = {
+        ...data,
+        timestamp: new Date().toISOString(),
+        lastUpdated: Date.now()
+      };
+  
+      updateHealthMetrics(newMetrics);
+      setHealthData(prev => [...prev, newMetrics].slice(-30));
+      
+      // Add this call:
+      await storeHealthMetricsInFirebase(newMetrics);
+  
+    } catch (error) {
+      console.error('Error fetching Google Fit data:', error);
+    }
+  }, [updateHealthMetrics]);
+
+  // Set up data fetching intervals based on device type
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (connectedDevice) {
+      const fetchData = async () => {
+        const userId = auth.currentUser?.uid;
+        if (!userId) return;
+
+        if (connectedDevice === 'google_fit') {
+          await fetchAndUpdateGoogleFitData();
+        } else {
+          // For Strava and Bluetooth, generate random data
+          const metrics = generateRandomMetrics();
+          updateHealthMetrics(metrics);
+          await syncHealthMetricsToFirebase(userId, metrics);
+
+          setHealthData(prev => [
+            ...prev,
+            metrics
+          ].slice(-30));
+        }
       };
 
-      setHealthData(prev => [...prev.slice(-30), newMetric]);
+      // Initial fetch
+      fetchData();
+      
+      // Set up interval
+      interval = setInterval(fetchData, 5000); // Update every 5 seconds
+    }
 
-      // Generate AI alerts based on thresholds
-      if (newMetric.heartRate > 80) {
-        setAlerts(prev => [
-          "High heart rate detected during rest. Consider taking a break.",
-          ...prev.slice(0, 4)
-        ]);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
       }
-      if (newMetric.hydration < 70) {
-        setAlerts(prev => [
-          "Hydration levels below optimal. Increase water intake.",
-          ...prev.slice(0, 4)
-        ]);
+    };
+  }, [connectedDevice, fetchAndUpdateGoogleFitData, updateHealthMetrics]);
+
+  // Listen for OAuth callback messages
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'oauth_callback') {
+        if (event.data.success) {
+          // Handle successful authorization
+          const deviceType = event.data.provider;
+          setDevices(prev =>
+            prev.map(device =>
+              device.type === deviceType
+                ? { ...device, connected: true, lastSync: new Date() }
+                : device
+            )
+          );
+          setConnectedDevice(deviceType);
+          
+          // Close the auth window if it exists
+          if (authWindow) {
+            authWindow.close();
+            setAuthWindow(null);
+          }
+        } else {
+          // Handle authorization failure
+          setConnectionError(`Authorization failed: ${event.data.error}`);
+        }
       }
+    };
 
-      // Add random exercise data
-      if (Math.random() > 0.95) {
-        const exerciseTypes = ['Running', 'Cycling', 'Swimming', 'Strength Training', 'HIIT'];
-        const newExercise: Exercise = {
-          id: Date.now().toString(),
-          type: exerciseTypes[Math.floor(Math.random() * exerciseTypes.length)],
-          duration: Math.floor(30 + Math.random() * 60),
-          calories: Math.floor(200 + Math.random() * 300),
-          heartRate: Math.floor(120 + Math.random() * 40),
-          timestamp: new Date()
-        };
-        setRecentExercises(prev => [newExercise, ...prev.slice(0, 4)]);
-      }
-    }, 3000);
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [authWindow, setConnectedDevice]);
 
-    return () => clearInterval(interval);
-  }, []);
+  const handleDeviceConnect = async (deviceType: string) => {
+    // Disconnect any previously connected device
+    if (connectedDevice) {
+      await handleDeviceDisconnect(connectedDevice);
+    }
 
-  const handleDeviceSync = async (deviceId: string) => {
+    switch (deviceType) {
+      case 'google_fit':
+        handleGoogleFitConnect();
+        break;
+      case 'strava':
+        handleStravaConnect();
+        break;
+      case 'bluetooth':
+        handleBluetoothConnect();
+        break;
+    }
+  };
+
+  const handleDeviceDisconnect = async (deviceType: string) => {
+    setConnectedDevice(null);
+    clearHealthMetrics();
+
+    if (deviceType === 'google_fit' && dataFetchInterval) {
+      clearInterval(dataFetchInterval);
+      setDataFetchInterval(null);
+    }
+
+    setDevices(prev =>
+      prev.map(device =>
+        device.type === deviceType
+          ? { ...device, connected: false }
+          : device
+      )
+    );
+  };
+
+  const handleGoogleFitConnect = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_FIT_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/google-fit-callback`;
+    const scope = [
+      'https://www.googleapis.com/auth/fitness.activity.read',
+      'https://www.googleapis.com/auth/fitness.heart_rate.read',
+      'https://www.googleapis.com/auth/fitness.body.read',
+      'https://www.googleapis.com/auth/fitness.location.read'
+    ].join(' ');
+  
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${redirectUri}&` +
+      `response_type=code&` +
+      `scope=${scope}&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+      
+    const authPopup = window.open(authUrl, 'google_fit_auth', 'width=600,height=600');
+    setAuthWindow(authPopup);
+  };
+
+  const handleStravaConnect = () => {
+    const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/strava-callback`;
+    const scope = 'read,activity:read';
+    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+    
+    const authPopup = window.open(authUrl, 'strava_auth', 'width=600,height=600');
+    setAuthWindow(authPopup);
+  };
+
+  const handleBluetoothConnect = async () => {
     try {
       setIsBluetoothConnecting(true);
       setConnectionError("");
-  
-      let options: RequestDeviceOptions;
-  
-      if (deviceId === 'apple') {
-        options = {
-          filters: [{ namePrefix: 'Apple' }],
-          optionalServices: ['0000180d-0000-1000-8000-00805f9b34fb'], // Heart Rate Service UUID
-        };
-      } else if (deviceId === 'fitbit') {
-        options = {
-          filters: [{ namePrefix: 'Fitbit' }],
-          optionalServices: ['0000180d-0000-1000-8000-00805f9b34fb'],
-        };
-      } else if (deviceId === 'garmin') {
-        options = {
-          filters: [{ namePrefix: 'Garmin' }],
-          optionalServices: ['0000180d-0000-1000-8000-00805f9b34fb'],
-        };
-      } else {
-        options = {
-          acceptAllDevices: true,
-          optionalServices: ['0000180d-0000-1000-8000-00805f9b34fb'],
-        };
-      }
-  
-      const device = await navigator.bluetooth.requestDevice(options);
-  
-      console.log(`Connected to ${device.name}`);
-  
-      setDevices(prevDevices =>
-        prevDevices.map(d =>
-          d.id === deviceId ? { ...d, connected: true, lastSync: new Date() } : d
+
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: ['heart_rate'] }]
+      });
+
+      console.log('Connected to device:', device.name);
+
+      setDevices(prev =>
+        prev.map(d =>
+          d.type === 'bluetooth'
+            ? { ...d, connected: true, lastSync: new Date(), name: device.name || 'Bluetooth Device' }
+            : d
         )
       );
     } catch (error) {
+      console.error('Bluetooth connection error:', error);
       setConnectionError("Failed to connect. Ensure your device is in pairing mode.");
-      console.error("Bluetooth connection error:", error);
     } finally {
       setIsBluetoothConnecting(false);
     }
   };
-  
-  
 
   const getMetricIcon = (metric: string) => {
     switch (metric) {
@@ -184,7 +342,7 @@ const WearableSync = ({ }: WearableSyncProps) => {
     }
   };
 
-  const getMetricValue = (data: HealthMetric) => {
+  const getMetricValue = (data: HealthMetrics) => {
     switch (selectedMetric) {
       case 'heartRate':
         return data.heartRate;
@@ -214,7 +372,7 @@ const WearableSync = ({ }: WearableSyncProps) => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-dark p-8 rounded-xl max-w-md w-full mx-4 relative"
+            className="bg-[#1a1a1a] p-8 rounded-xl max-w-md w-full mx-4 relative"
           >
             <div className="text-center">
               <motion.div
@@ -229,7 +387,7 @@ const WearableSync = ({ }: WearableSyncProps) => {
                 Please make sure your device is nearby and Bluetooth is enabled...
               </p>
               {connectionError && (
-                <p className="text-red-500 mb-4">{connectionError}</p>
+                <p className="text-[#ff4757] mb-4">{connectionError}</p>
               )}
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -249,10 +407,12 @@ const WearableSync = ({ }: WearableSyncProps) => {
     </AnimatePresence>
   );
 
+  const isAnyDeviceConnected = devices.some(device => device.connected);
+
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-[#1a1a1a] p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Wearable Device Sync</h1>
           <p className="text-gray-400">
@@ -265,7 +425,7 @@ const WearableSync = ({ }: WearableSyncProps) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
       >
         {devices.map((device) => (
           <motion.div
@@ -278,7 +438,7 @@ const WearableSync = ({ }: WearableSyncProps) => {
                 <div className="text-2xl">{device.icon}</div>
                 <div>
                   <h3 className="font-semibold">{device.name}</h3>
-                  <p className={`text-sm ${device.connected ? 'text-green-500' : 'text-gray-400'}`}>
+                  <p className={`text-sm ${device.connected ? 'text-[#2ed573]' : 'text-gray-400'}`}>
                     {device.connected ? 'Connected' : 'Not Connected'}
                   </p>
                 </div>
@@ -299,17 +459,20 @@ const WearableSync = ({ }: WearableSyncProps) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => handleDeviceSync(device.id)}
+              onClick={() => device.connected 
+                ? handleDeviceDisconnect(device.type)
+                : handleDeviceConnect(device.type)
+              }
               disabled={syncing}
               className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg
                 transition-colors ${
                   device.connected
-                    ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30'
-                    : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'
+                    ? 'bg-[#ff4757]/20 text-[#ff4757] hover:bg-[#ff4757]/30'
+                    : 'bg-[#2ed573]/20 text-[#2ed573] hover:bg-[#2ed573]/30'
                 }`}
             >
               {syncing ? (
-                <FaSync className="animate-spin" />
+                <FaSpinner className="animate-spin" />
               ) : device.connected ? (
                 <>
                   <FaTimes />
@@ -326,194 +489,129 @@ const WearableSync = ({ }: WearableSyncProps) => {
         ))}
       </motion.div>
 
-      {/* Real-time Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Real-time Data</h2>
-            <div className="flex gap-2">
-              {['heartRate', 'sleep', 'hydration', 'steps', 'stress'].map(metric => (
-                <motion.button
-                  key={metric}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setSelectedMetric(metric)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    selectedMetric === metric
-                      ? 'bg-white/20 text-white'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {getMetricIcon(metric)}
-                </motion.button>
-              ))}
-            </div>
-          </div>
+      {isAnyDeviceConnected ? (
+        <>
+          {/* Real-time Metrics */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">Real-time Data</h2>
+                <div className="flex gap-2">
+                  {['heartRate', 'sleep', 'hydration', 'steps', 'stress'].map(metric => (
+                    <motion.button
+                      key={metric}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setSelectedMetric(metric)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        selectedMetric === metric
+                          ? 'bg-white/20 text-white'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {getMetricIcon(metric)}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
 
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={healthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                <XAxis dataKey="timestamp" stroke="#888" />
-                <YAxis stroke="#888" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid #666'
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey={d => getMetricValue(d)}
-                  stroke={getMetricColor(selectedMetric)}
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={healthData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis dataKey="timestamp" stroke="#888" />
+                    <YAxis stroke="#888" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        border: '1px solid #666'
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={d => getMetricValue(d)}
+                      stroke={getMetricColor(selectedMetric)}
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
 
-        {/* Recent Exercises */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
-        >
-          <h2 className="text-xl font-semibold mb-6">Recent Exercises</h2>
-          <div className="space-y-4">
-            <AnimatePresence>
-              {recentExercises.map((exercise) => (
-                <motion.div
-                  key={exercise.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="bg-white/5 p-4 rounded-lg"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">{exercise.type}</h3>
-                      <p className="text-sm text-gray-400">
-                        {exercise.timestamp.toLocaleTimeString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-2">
-                        <FaStopwatch className="text-primary" />
-                        <span>{exercise.duration} min</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FaHeartbeat className="text-red-500" />
-                        <span>{exercise.heartRate} BPM</span>
-                      </div>
-                    </div>
+            {/* Quick Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <FaHeartbeat className="text-primary text-2xl" />
+                <h2 className="text-xl font-semibold">Quick Stats</h2>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FaHeartbeat className="text-red-500" />
+                    <span>Heart Rate</span>
                   </div>
-                  <div className="mt-2 flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <FaFire className="text-orange-500" />
-                      <span>{exercise.calories} kcal</span>
-                    </div>
+                  <p className="text-2xl font-bold">
+                    {healthData.length > 0 ? healthData[healthData.length - 1].heartRate : 0} BPM
+                  </p>
+                </div>
+
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FaWalking className="text-green-500" />
+                    <span>Steps</span>
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </motion.div>
-      </div>
+                  <p className="text-2xl font-bold">
+                    {healthData.length > 0 ? healthData[healthData.length - 1].steps : 0}
+                  </p>
+                </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FaFire className="text-orange-500" />
+                    <span>Calories</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {healthData.length > 0 ? healthData[healthData.length - 1].calories : 0} kcal
+                  </p>
+                </div>
+
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FaBed className="text-purple-500" />
+                    <span>Sleep</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {healthData.length > 0 ? healthData[healthData.length - 1].sleep : 0} hrs
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </>
+      ) : (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
+          className="bg-white/10 backdrop-blur-lg p-8 rounded-xl text-center"
         >
-          <div className="flex items-center gap-3 mb-2">
-            <FaHeartbeat className="text-red-500 text-2xl" />
-            <h3 className="font-semibold">Heart Rate</h3>
-          </div>
-          <div className="text-3xl font-bold">
-            {healthData[healthData.length - 1]?.heartRate.toFixed(0)} BPM
-          </div>
+          <FaExclamationTriangle className="text-[#ff4757] text-4xl mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">No Device Connected</h2>
+          <p className="text-gray-400 mb-4">
+            Please connect a device to start tracking your health and fitness metrics.
+          </p>
         </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <FaWalking className="text-green-500 text-2xl" />
-            <h3 className="font-semibold">Steps</h3>
-          </div>
-          <div className="text-3xl font-bold">
-            {healthData[healthData.length - 1]?.steps.toFixed(0)}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <FaFire className="text-orange-500 text-2xl" />
-            <h3 className="font-semibold">Calories</h3>
-          </div>
-          <div className="text-3xl font-bold">
-            {healthData[healthData.length - 1]?.calories.toFixed(0)} kcal
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <FaBed className="text-purple-500 text-2xl" />
-            <h3 className="font-semibold">Sleep</h3>
-          </div>
-          <div className="text-3xl font-bold">
-            {healthData[healthData.length - 1]?.sleep.toFixed(1)} hrs
-          </div>
-        </motion.div>
-      </div>
-
-      {/* AI Insights & Alerts */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/10 backdrop-blur-lg p-6 rounded-xl"
-      >
-        <h2 className="text-xl font-semibold mb-6">AI Health Insights</h2>
-        
-        <div className="space-y-4">
-          <AnimatePresence>
-            {alerts.map((alert, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="flex items-center gap-3 bg-white/5 p-4 rounded-lg"
-              >
-                <FaBrain className="text-primary text-xl" />
-                <p>{alert}</p>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      </motion.div>
+      )}
 
       {/* Device Connection Modal */}
       {renderDeviceConnectionModal()}
